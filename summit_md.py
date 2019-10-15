@@ -258,6 +258,7 @@ def generate_training_pipeline():
         print 'Done' 
 
 
+    global CUR_STAGE
 
     p = Pipeline()
     p.name = 'MD_ML'
