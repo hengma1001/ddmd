@@ -93,7 +93,8 @@ while True:
     n_outlier = len(outliers) 
     print('dimension = {0}, eps = {1:.2f}, number of outlier found: {2}'.format(
         model_dim, eps, n_outlier))
-    if n_outlier > 150: 
+    # get up to 1500 outliers 
+    if n_outlier > 1500: 
         eps = eps + 0.05 
     else: 
         eps_record[model_best] = eps 
@@ -136,8 +137,10 @@ for outlier in outliers_list:
 
 # Set up input configurations for next batch of MD simulations 
 ## Restarts from pdb
+### Get the pdbs used once already 
 used_pdbs = glob(os.path.join(args.md, 'omm_runs_*/omm_runs_*.pdb'))
 used_pdbs_basenames = [os.path.basename(used_pdb) for used_pdb in used_pdbs ]
+### Exclude the used pdbs 
 outliers_list = glob(os.path.join(outliers_pdb_path, 'omm_runs*.pdb'))
 restart_pdbs = [outlier for outlier in outliers_list if os.path.basename(outlier) not in used_pdbs_basenames] 
 
@@ -149,6 +152,7 @@ for checkpnt in checkpnt_list:
     if not os.path.exists(checkpnt_filepath): 
         shutil.copy2(checkpnt, checkpnt_filepath) 
         print [os.path.basename(os.path.dirname(checkpnt)) in outlier for outlier in outliers_list] 
+        # includes only checkpoint of trajectory that contains an outlier 
         if any(os.path.basename(os.path.dirname(checkpnt)) in outlier for outlier in outliers_list):  
             restart_checkpnts.append(checkpnt_filepath) 
 
@@ -173,7 +177,9 @@ else:
 
 
 # Write record for next step 
-restart_points = restart_checkpnts + restart_pdbs
+## 1> restarting checkpoint; 2> unused outliers (ranked); 3> used outliers (shuffled) 
+random.shuffle(used_pdbs) 
+restart_points = restart_checkpnts + restart_pdbs + used_pdbs  
 print restart_points 
 
 restart_points_filepath = os.path.abspath('./restart_points.json') 
