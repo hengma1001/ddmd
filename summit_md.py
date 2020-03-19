@@ -215,7 +215,6 @@ def generate_training_pipeline():
         t4.arguments = ['outlier_locator.py', 
                 '--md',  md_path, 
                 '--cvae', cvae_path, 
-                '--tica', tica_path, 
                 '--pdb', pdb_file, 
                 '--ref', ref_pdb_file]
 
