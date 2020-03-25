@@ -47,6 +47,7 @@ N_jobs_ML = 10
 
 hrs_wt = 2 
 queue = 'batch'
+proj_id = 'med110'
 
 CUR_STAGE=0
 MAX_STAGE= 10
@@ -299,7 +300,7 @@ if __name__ == '__main__':
             'walltime': 60 * hrs_wt,
             'cpus'    : N_jobs_MD * 7,
             'gpus'    : N_jobs_MD,#6*2 ,
-            'project' : 'BIP179'
+            'project' : proj_id
     }
 
     # Create Application Manager
