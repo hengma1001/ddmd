@@ -96,18 +96,15 @@ def generate_training_pipeline():
             if initial_MD or i >= len(outlier_list): 
                 t1.arguments += ['--pdb_file', pdb_file] 
 #                 t1.arguments += ['--length', LEN_initial] 
-#                print "Running from initial frame for %d ns. " % LEN_initial
             elif outlier_list[i].endswith('pdb'): 
                 t1.arguments += ['--pdb_file', outlier_list[i]] 
 #                 t1.arguments += ['--length', LEN_iter] 
                 t1.pre_exec += ['cp %s ./' % outlier_list[i]]  
-#                print "Running from outlier %s for %d ns" % (outlier_list[i], LEN_iter) 
             elif outlier_list[i].endswith('chk'): 
                 t1.arguments += ['--pdb_file', pdb_file, 
                         '-c', outlier_list[i]] 
 #                 t1.arguments += ['--length', LEN_iter]
                 t1.pre_exec += ['cp %s ./' % outlier_list[i]]
-#                print "Running from checkpoint %s for %d ns" % (outlier_list[i], LEN_iter) 
 
             # how long to run the simulation 
             if initial_MD: 
@@ -244,7 +241,7 @@ def generate_training_pipeline():
 
     def func_on_true(): 
         global CUR_STAGE, MAX_STAGE
-        print 'finishing stage %d of %d' % (CUR_STAGE, MAX_STAGE) 
+        print('finishing stage %d of %d' % (CUR_STAGE, MAX_STAGE)) 
         
         # --------------------------
         # MD stage
@@ -273,7 +270,7 @@ def generate_training_pipeline():
         CUR_STAGE += 1
 
     def func_on_false(): 
-        print 'Done' 
+        print('Done') 
 
 
     global CUR_STAGE
