@@ -8,3 +8,8 @@ source activate /ccs/home/hm0/.conda/envs/entk_py3
 ```
 
 The code is running as a preliminary fashion and will be cleaned up soon. 
+
+All the compuational module is available in `omm` envs. 
+```bash 
+source activate /ccs/home/hm0/.conda/envs/omm 
+``` 
