@@ -30,23 +30,23 @@ if os.path.exists('cvae_input.h5'):
 num_frame_cap = int(args.l)
 
 while not os.path.exists("halt"): 
-	cm_files = sorted(glob(cm_filepath)) 
+    cm_files = sorted(glob(cm_filepath)) 
 
-	if cm_files == []: 
-	    raise IOError("No h5 file found, recheck your input filepath") 
+    if cm_files == []: 
+        raise IOError("No h5 file found, recheck your input filepath") 
 
-	# Get number of frames that simulation generates 
-	n_frames = get_num_frames(cm_files)
+    # Get number of frames that simulation generates 
+    n_frames = get_num_frames(cm_files)
 
-	if n_frames > num_frame_cap:
-		# Compress all .h5 files into one in cvae format 
-		cvae_input = get_cvae_input(cm_files)
+    if n_frames > num_frame_cap:
+        # Compress all .h5 files into one in cvae format 
+        cvae_input = get_cvae_input(cm_files)
 
-		# Create .h5 as cvae input
-		cvae_input_file = 'cvae_input.h5'
-		cvae_input_save = h5py.File(cvae_input_file, 'w')
-		cvae_input_save.create_dataset('contact_maps', data=cvae_input)
-		cvae_input_save.close()
+        # Create .h5 as cvae input
+        cvae_input_file = 'cvae_input.h5'
+        cvae_input_save = h5py.File(cvae_input_file, 'w')
+        cvae_input_save.create_dataset('contact_maps', data=cvae_input)
+        cvae_input_save.close()
 
-		num_frame_cap = int(num_frame_cap * 1.5) 
-		print(f"Update frame cap to {num_frame_cap}")
+        num_frame_cap = int(num_frame_cap * 1.5) 
+        print(f"Update frame cap to {num_frame_cap}")
