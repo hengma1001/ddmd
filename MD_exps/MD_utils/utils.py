@@ -1,6 +1,6 @@
 import os 
 
-def create_MD_path(label): 
+def create_md_path(label): 
     """
     create MD simulation path based on its label (int), 
     and automatically update label if path exists. 

@@ -1,7 +1,8 @@
 import os 
 import time
 import glob
-import shutils 
+import shutil 
+import random
 import numpy as np 
 
 import parmed as pmd
@@ -9,8 +10,8 @@ import simtk.openmm.app as app
 import simtk.openmm as omm
 import simtk.unit as u
 
-from openmm_reporter import ContactMapReporter
-from utils import create_md_path
+from MD_utils.openmm_reporter import ContactMapReporter
+from MD_utils.utils import create_md_path
 
 
 def openmm_simulate_amber_implicit(
@@ -84,7 +85,10 @@ def openmm_simulate_amber_implicit(
 
     simulation = app.Simulation(pdb.topology, system, integrator, platform, properties)
 
-    simulation.context.setPositions(random.choice(pdb.get_coordinates())/10) #parmed \AA to OpenMM nm
+    if pdb.get_coordinates().shape[0] == 1: 
+        simulation.context.setPositions(pdb.positions) 
+    else: 
+        simulation.context.setPositions(random.choice(pdb.get_coordinates())/10) #parmed \AA to OpenMM nm
 
     # equilibrate
     simulation.minimizeEnergy() 
@@ -114,8 +118,10 @@ def openmm_simulate_amber_implicit(
         nsteps = int(reeval_time/dt) 
         niter = int(sim_time/reeval_time) 
         for i in range(niter): 
-            new_pdb = 'new.pdb'
+            new_pdb = os.path.abspath('new.pdb')
             if os.path.exists(new_pdb):
+                print("Found new.pdb, starting new sim...") 
+                del simulation
                 os.chdir(work_dir)
                 openmm_simulate_amber_implicit(
                     new_pdb, top_file=top_file, 

@@ -1,12 +1,14 @@
 #!/bin/bash
 # Summitdev OpenMM testing
-#BSUB -P MED106 
+#BSUB -P MED110 
 #BSUB -J test_omm_ppc
 #BSUB -o tst.o%J
 #BSUB -W 1:00
 #BSUB -nnodes 1
 # End LSF directives and begin shell commands
 date
-source activate omm 
-module load cuda/9.1.85
-jsrun -n 1 -a 1 -g 1 python run_openmm.py -f pdb/100-fs-peptide-400K.pdb 
+source activate py3 
+module load cuda/10.1.168
+nvidia-smi -q 
+export PYTHONPATH=$PYTHONPATH:/gpfs/alpine/med110/proj-shared/hm0/entk_cvae_md/MD_exps
+jsrun --smpiargs="off" -n 1 -a 1 -g 1 python run_openmm.py -f pdb/100-fs-peptide-400K.pdb -l 50 
