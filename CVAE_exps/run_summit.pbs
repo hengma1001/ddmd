@@ -9,4 +9,4 @@
 date
 source activate hm0 
 module load cuda/9.1.85
-jsrun -n 1 -a 1 -g 1 python train_cvae.py  -f cvae_input.h5  
+jsrun -n 1 -a 1 -g 1 python train_cvae.py -f ../MD_to_CVAE/cvae_input.h5 -b 100 
