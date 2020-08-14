@@ -11,7 +11,7 @@ import simtk.openmm as omm
 import simtk.unit as u
 
 from MD_utils.openmm_reporter import ContactMapReporter
-from MD_utils.utils import create_md_path
+from MD_utils.utils import create_md_path, touch_file
 
 
 def openmm_simulate_amber_implicit(
@@ -61,15 +61,25 @@ def openmm_simulate_amber_implicit(
         The timespan of the simulation trajectory
     """
 
+    # set up save dir for simulation results 
+    work_dir = os.getcwd() 
+    time_label = int(time.time())
+    omm_path = create_md_path(time_label) 
+
+    # setting up running path  
+    os.chdir(omm_path)
+
     if top_file: 
         pdb = pmd.load_file(top_file, xyz = pdb_file)
+        shutil.copy2(top_file, './')
         system = pdb.createSystem(nonbondedMethod=app.CutoffNonPeriodic, 
                 nonbondedCutoff=1.0*u.nanometer, constraints=app.HBonds, 
                 implicitSolvent=app.OBC1)
     else: 
         pdb = pmd.load_file(pdb_file)
         forcefield = app.ForceField('amber99sbildn.xml', 'amber99_obc.xml')
-        system = forcefield.createSystem(pdb.topology, nonbondedMethod=app.CutoffNonPeriodic, 
+        system = forcefield.createSystem(pdb.topology, 
+                nonbondedMethod=app.CutoffNonPeriodic, 
                 nonbondedCutoff=1.0*u.nanometer, constraints=app.HBonds)
 
     dt = 0.002*u.picoseconds
@@ -87,21 +97,19 @@ def openmm_simulate_amber_implicit(
 
     if pdb.get_coordinates().shape[0] == 1: 
         simulation.context.setPositions(pdb.positions) 
+        shutil.copy2(pdb_file, './')
     else: 
-        simulation.context.setPositions(random.choice(pdb.get_coordinates())/10) #parmed \AA to OpenMM nm
+        positions = random.choice(pdb.get_coordinates())
+        simulation.context.setPositions(positions/10) 
+        #parmed \AA to OpenMM nm
+        pdb.write_pdb('start.pdb', coordinates=positions) 
 
     # equilibrate
     simulation.minimizeEnergy() 
     simulation.context.setVelocitiesToTemperature(300*u.kelvin, random.randint(1, 10000))
     simulation.step(int(100*u.picoseconds / (2*u.femtoseconds)))
 
-    # set up save dir for simulation results 
-    work_dir = os.getcwd() 
-    time_label = int(time.time())
-    omm_path = create_md_path(time_label) 
-
-    # setting up reporters 
-    os.chdir(omm_path)
+    # setting up reports 
     report_freq = int(report_time/dt)
     simulation.reporters.append(app.DCDReporter(output_traj, report_freq))
     if output_cm:
@@ -118,10 +126,14 @@ def openmm_simulate_amber_implicit(
         nsteps = int(reeval_time/dt) 
         niter = int(sim_time/reeval_time) 
         for i in range(niter): 
-            new_pdb = os.path.abspath('new.pdb')
-            if os.path.exists(new_pdb):
+            if os.path.exists('new_pdb'):
                 print("Found new.pdb, starting new sim...") 
+
+                # cleaning up old runs 
                 del simulation
+                # starting new simulation with new pdb
+                with open('new_pdb', 'r') as fp: 
+                    new_pdb = fp.read().split()[0] 
                 os.chdir(work_dir)
                 openmm_simulate_amber_implicit(
                     new_pdb, top_file=top_file, 
@@ -136,7 +148,6 @@ def openmm_simulate_amber_implicit(
                     )
             else: 
                 simulation.step(nsteps)
-
     else: 
         nsteps = int(sim_time/dt)
         simulation.step(nsteps)

@@ -11,3 +11,11 @@ def create_md_path(label):
         return md_path
     except: 
         return create_MD_path(label + 1)
+
+
+def touch_file(file): 
+    """
+    create an empty file for bookkeeping sake
+    """
+    with open(file, 'w'): 
+        pass
