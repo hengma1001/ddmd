@@ -6,6 +6,8 @@ import MDAnalysis as mda
 from cvae.CVAE import CVAE
 from keras import backend as K 
 from sklearn.cluster import DBSCAN 
+from sklearn.neighbors import LocalOutlierFactor 
+
 
 def triu_to_full(cm0):
     num_res = int(np.ceil((len(cm0) * 2) ** 0.5))
@@ -47,13 +49,11 @@ def stamp_to_time(stamp):
 
 def find_frame(traj_dict, frame_number=0): 
     local_frame = frame_number
-    for key in sorted(traj_dict.keys()): 
-        if local_frame - int(traj_dict[key]) < 0: 
-            dir_name = os.path.dirname(key) 
-            traj_file = os.path.join(dir_name, 'output.dcd')             
-            return traj_file, local_frame
+    for omm_run in sorted(traj_dict.keys()): 
+        if local_frame - int(traj_dict[omm_run]) < 0: 
+            return omm_run, local_frame
         else: 
-            local_frame -= int(traj_dict[key])
+            local_frame -= int(traj_dict[omm_run])
     raise Exception('frame %d should not exceed the total number of frames, %d' % (frame_number, sum(np.array(traj_dict.values()).astype(int))))
     
     
@@ -113,3 +113,19 @@ def outliers_from_latent(cm_predict, eps=0.35):
     db_label = db.labels_
     outlier_list = np.where(db_label == -1)
     return outlier_list
+
+
+def outliers_largeset(cm_predict, n_outliers=500, n_jobs=1): 
+    indices_10 = []
+    scores_10 = []
+    for i in range(10): 
+        cm_predict_loc = cm_predict[i::10] 
+        indices_1, score_1 = outliers_from_latent_loc(
+                cm_predict_loc, n_outliers=n_outliers, n_jobs=n_jobs) 
+        indices_10.append(indices_1 * 10 + 1) 
+        scores_10.append(score_1) 
+    indices = np.hstack(indices_10) 
+    scores = np.hstack(scores_10) 
+    ranked_indices = np.argsort(scores)[:n_outliers] 
+    ranked_scores = scores[ranked_indices] 
+    return ranked_indices, ranked_scores

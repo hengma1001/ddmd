@@ -6,10 +6,9 @@ import argparse
 import numpy as np 
 from glob import glob
 import MDAnalysis as mda
-from utils import outliers_from_cvae, cm_to_cvae  
 from utils import predict_from_cvae, outliers_from_latent_loc 
 from utils import outliers_largeset
-from utils import find_frame, write_pdb_frame, make_dir_p 
+from utils import find_frame, write_pdb_frame 
 from  MDAnalysis.analysis.rms import RMSD
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -38,6 +37,7 @@ pdb_file = os.path.abspath(args.pdb)
 ref_pdb_file = os.path.abspath(args.ref) 
 n_outliers = args.n_out
 time_out = args.timeout
+iteration = 0 
 
 while not os.path.exists("halt"):
     # get all omm_runs path 
@@ -66,13 +66,15 @@ while not os.path.exists("halt"):
 
     sel_dim = model_dims[np.argmin(cvae_loss)]
     sel_model = sorted(glob(os.path.join(cvae_path, f'cvae_runs_{sel_dim}_*')))[-1]
+    sel_model_weight = sel_model + '/cvae_weight.h5'
 
     print(("Using model {} with {}... ".format(sel_model, min(cvae_loss))))
 
     # Get the predicted embeddings 
     cm_files_list = [os.path.join(omm_run, 'output_cm.h5') for omm_run in omm_runs]
     cm_predict, train_data_length = predict_from_cvae(
-            sel_model, cm_files_list, hyper_dim=model_dim, padding=2) 
+            sel_model_weight, cm_files_list, 
+            hyper_dim=int(sel_dim), padding=4) 
 
     # A record of every trajectory length
     traj_dict = dict(list(zip(omm_runs, train_data_length))) 
@@ -123,15 +125,17 @@ while not os.path.exists("halt"):
     ### Get the pdbs used once already 
     used_pdbs = glob(os.path.join(md_path, 'omm_runs_*/omm_runs_*.pdb'))
     used_pdbs_labels = [os.path.basename(used_pdb) for used_pdb in used_pdbs ]
+    print(used_pdbs_labels) 
     ### Exclude the used pdbs 
     # outliers_list = glob(os.path.join(outliers_pdb_path, 'omm_runs*.pdb'))
     restart_pdbs = [outlier for outlier in new_outliers_list \
             if os.path.basename(outlier) not in used_pdbs_labels] 
+    print("restart pdbs: ", restart_pdbs)
 
     # rank the restart_pdbs according to their RMSD to local state 
     if ref_pdb_file: 
-        outlier_traj = mda.Universe(restart_pdbs[0], restart_pdbs) 
         ref_traj = mda.Universe(ref_pdb_file) 
+        outlier_traj = mda.Universe(restart_pdbs[0], restart_pdbs) 
         R = RMSD(outlier_traj, ref_traj, select='protein and name CA') 
         R.run()    
         # Make a dict contains outliers and their RMSD
@@ -157,6 +161,9 @@ while not os.path.exists("halt"):
             restart_pdb = os.path.abspath(restart_pdbs.pop(0))
             with open(md + '/new_pdb', 'w') as fp: 
                 fp.write(restart_pdb)
+
+    print(f"=======>Iteration {iteration} done<========")
+    iteration += 1
 
 
 # ## Restarts from check point 

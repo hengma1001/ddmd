@@ -1,0 +1,13 @@
+#!/bin/bash
+# Summitdev OpenMM testing
+#BSUB -P MED110 
+#BSUB -J test_omm_ppc
+#BSUB -o tst.o%J
+#BSUB -W 1:00
+#BSUB -nnodes 1
+# End LSF directives and begin shell commands
+date
+source activate py3
+module load cuda/10.1.168
+export PYTHONPATH=$PYTHONPATH:/autofs/nccs-svm1_home1/hm0/med110_proj/entk_cvae_md/CVAE_exps
+jsrun -n 1 -a 1 -g 1 python outlier_locator.py -m ../MD_exps/ -c ../CVAE_exps/ -p ../MD_exps/pdb/fs-peptide.pdb -r ../MD_exps/pdb/fs-peptide.pdb 
