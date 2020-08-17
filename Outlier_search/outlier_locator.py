@@ -35,8 +35,8 @@ args = parser.parse_args()
 # pdb file for MDAnalysis 
 pdb_file = os.path.abspath(args.pdb) 
 ref_pdb_file = os.path.abspath(args.ref) 
-n_outliers = args.n_out
-time_out = args.timeout
+n_outliers = int(args.n_out)
+time_out = float(args.timeout)
 iteration = 0 
 
 while not os.path.exists("halt"):
