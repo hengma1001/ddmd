@@ -33,10 +33,12 @@ gpu_id = args.gpu
 work_dir = os.getcwd() 
 
 old_num_frame = 0 
-while not os.path.exists("halt"):
+time.sleep(600)
+while not os.path.exists("../halt"):
     if not os.path.exists(cvae_input):
         continue 
     else: 
+        time.sleep(60)
         cm_h5 = h5py.File(cvae_input, 'r', libver='latest', swmr=True)
         cm_data = cm_h5['contact_maps']
         num_frame = cm_data.shape[0]

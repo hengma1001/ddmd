@@ -1,5 +1,6 @@
 import os 
 import h5py
+import time
 import argparse
 import warnings 
 import numpy as np 
@@ -21,7 +22,7 @@ if args.f:
     cm_filepath = os.path.abspath(os.path.join(args.f, 'omm_runs*/*_cm.h5')) 
 else: 
     warnings.warn("No input dirname given, using current directory...") 
-    cm_filepath = os.path.abspath(os.path.join('.', 'omm_runs*/*_cm.h5'))
+    cm_filepath = os.path.abspath('./omm_runs*/*_cm.h5')
 
 # delete previously existing cvae input file 
 if os.path.exists('cvae_input.h5'):
@@ -29,24 +30,41 @@ if os.path.exists('cvae_input.h5'):
 
 num_frame_cap = int(args.l)
 
-while not os.path.exists("halt"): 
+n_iter = 0 
+while not os.path.exists("../halt"): 
+    # get all contact map h5 files 
     cm_files = sorted(glob(cm_filepath)) 
 
     if cm_files == []: 
-        raise IOError("No h5 file found, recheck your input filepath") 
+        continue     
 
     # Get number of frames that simulation generates 
-    n_frames = get_num_frames(cm_files)
+    while True: 
+        try: 
+            n_frames = get_num_frames(cm_files)
+            break
+        except KeyError: 
+            time.sleep(60) 
 
     if n_frames > num_frame_cap:
         # Compress all .h5 files into one in cvae format 
         cvae_input = get_cvae_input(cm_files)
 
         # Create .h5 as cvae input
-        cvae_input_file = 'cvae_input.h5'
-        cvae_input_save = h5py.File(cvae_input_file, 'w')
-        cvae_input_save.create_dataset('contact_maps', data=cvae_input)
-        cvae_input_save.close()
+        while True: 
+            try:
+                cvae_input_file = 'cvae_input.h5'
+                cvae_input_save = h5py.File(cvae_input_file, 'w')
+                cvae_input_save.create_dataset('contact_maps', data=cvae_input)
+                cvae_input_save.close()
+                break
+            except: 
+                continue 
 
-        num_frame_cap = int(num_frame_cap * 1.5) 
+        num_frame_cap = int(num_frame_cap * 1.6) 
         print(f"Update frame cap to {num_frame_cap}")
+    elif n_iter % 10 == 0: 
+        print(f"accumulated {n_frames} frames...")
+        time.sleep(60)
+    
+    n_iter += 1 

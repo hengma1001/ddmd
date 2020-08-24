@@ -10,7 +10,7 @@ def create_md_path(label):
         os.mkdir(md_path)
         return md_path
     except: 
-        return create_MD_path(label + 1)
+        return create_md_path(label + 1)
 
 
 def touch_file(file): 

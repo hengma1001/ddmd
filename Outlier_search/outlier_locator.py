@@ -83,7 +83,7 @@ while not os.path.exists("halt"):
     ## Unique outliers 
     print("Starting outlier searching...")
     outlier_list_ranked, _ = outliers_from_latent_loc(
-            cm_predict, n_outliers=n_outliers, n_jobs=42)  
+            cm_predict, n_outliers=n_outliers, n_jobs=32)  
     print("Done outlier searching...")
     # print(outlier_list_ranked)
 

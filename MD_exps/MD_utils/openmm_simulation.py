@@ -65,6 +65,7 @@ def openmm_simulate_amber_implicit(
     work_dir = os.getcwd() 
     time_label = int(time.time())
     omm_path = create_md_path(time_label) 
+    print(f"Running simulation at {omm_path}")
 
     # setting up running path  
     os.chdir(omm_path)
@@ -136,21 +137,36 @@ def openmm_simulate_amber_implicit(
                     new_pdb = fp.read().split()[0] 
                 os.chdir(work_dir)
                 openmm_simulate_amber_implicit(
-                    new_pdb, top_file=top_file, 
-                    check_point=None, 
-                    GPU_index=GPU_index,
-                    output_traj=output_traj, 
-                    output_log=output_log, 
-                    output_cm=output_cm,
-                    report_time=report_time, 
-                    sim_time=sim_time,
-                    reeval_time=reeval_time, 
-                    )
+                        new_pdb, top_file=top_file, 
+                        check_point=None, 
+                        GPU_index=GPU_index,
+                        output_traj=output_traj, 
+                        output_log=output_log, 
+                        output_cm=output_cm,
+                        report_time=report_time, 
+                        sim_time=sim_time,
+                        reeval_time=reeval_time, 
+                        )
             else: 
                 simulation.step(nsteps)
     else: 
         nsteps = int(sim_time/dt)
         simulation.step(nsteps)
+
+    os.chdir(work_dir)
+    if not os.path.exists('../halt'): 
+        openmm_simulate_amber_implicit(
+                pdb_file, top_file=top_file, 
+                check_point=None, 
+                GPU_index=GPU_index,
+                output_traj=output_traj, 
+                output_log=output_log, 
+                output_cm=output_cm,
+                report_time=report_time, 
+                sim_time=sim_time,
+                reeval_time=reeval_time, 
+                )
+
 
 
 def openmm_simulate_amber_npt(top_file, pdb_file, check_point, GPU_index=0,

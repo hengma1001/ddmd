@@ -30,6 +30,7 @@ else:
 # ref_pdb_file = os.path.abspath('./pdb/fs-peptide.pdb')
 
 gpu_index = 0 # os.environ["CUDA_VISIBLE_DEVICES"]
+print("MD runs started...")
 
 # check_point = None
 openmm_simulate_amber_implicit(
