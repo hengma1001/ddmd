@@ -45,7 +45,7 @@ top_file = None
 ref_pdb_file = os.path.join(md_path, 'pdb/fs-peptide.pdb')
 
 N_jobs_MD = 20
-N_jobs_ML = 4
+N_jobs_ML = 3
 
 hrs_wt = 2 
 queue = 'batch'
@@ -242,7 +242,7 @@ class DeepDriveMD:
         t4.cpu_reqs = {
                 'processes': 1,
                 'process_type': None,
-                'threads_per_process': 32,
+                'threads_per_process': 12,
                 'thread_type': 'OpenMP'
                 }
         t4.gpu_reqs = {
@@ -275,7 +275,7 @@ class DeepDriveMD:
                 self.generate_MD_tasks(), \
                 self.generate_aggregating_task(), \
                 self.generate_ML_tasks(), \
-                # self.generate_interfacing_task()\
+                self.generate_interfacing_task()\
                 ]
         
         return p
@@ -288,7 +288,7 @@ if __name__ == '__main__':
     # Create a dictionary to describe four mandatory keys:
     # resource, walltime, cores and project
     # resource is 'local.localhost' to execute locally
-    n_gpus = N_jobs_MD + N_jobs_ML
+    n_gpus = N_jobs_MD + N_jobs_ML + 1
     res_dict = {
             'resource': 'ornl.summit',
             'queue'   : queue,

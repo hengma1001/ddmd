@@ -71,19 +71,21 @@ while not os.path.exists("halt"):
     print(("Using model {} with {}... ".format(sel_model, min(cvae_loss))))
 
     # Get the predicted embeddings 
-    cm_files_list = [os.path.join(omm_run, 'output_cm.h5') for omm_run in omm_runs]
+    # cm_files_list = [os.path.join(omm_run, 'output_cm.h5') for omm_run in omm_runs]
+    cm_files_list = sorted(glob(os.path.join(md_path, 'omm_runs_*/output_cm.h5')))
     cm_predict, train_data_length = predict_from_cvae(
             sel_model_weight, cm_files_list, 
             hyper_dim=int(sel_dim), padding=4) 
 
     # A record of every trajectory length
+    omm_runs = [os.path.dirname(cm_file) for cm_file in cm_files_list]
     traj_dict = dict(list(zip(omm_runs, train_data_length))) 
     print(traj_dict)
 
     ## Unique outliers 
     print("Starting outlier searching...")
     outlier_list_ranked, _ = outliers_from_latent_loc(
-            cm_predict, n_outliers=n_outliers, n_jobs=32)  
+            cm_predict, n_outliers=n_outliers, n_jobs=12)  
     print("Done outlier searching...")
     # print(outlier_list_ranked)
 
@@ -118,7 +120,7 @@ while not os.path.exists("halt"):
             outlier_label = os.path.basename(outlier)
             print(f'Old outlier {outlier_label} is now connected to \
                 a cluster and removing it from the outlier list ') 
-            os.rename(outlier, os.path.join(outliers_pdb_path, '-'+outlier_label)) 
+            # os.rename(outlier, os.path.join(outliers_pdb_path, '-'+outlier_label)) 
 
 
     # Set up input configurations for next batch of MD simulations 
