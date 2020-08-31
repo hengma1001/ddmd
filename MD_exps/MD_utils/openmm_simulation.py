@@ -172,12 +172,20 @@ def openmm_simulate_amber_implicit(
         return  
 
 
-
-def openmm_simulate_amber_npt(top_file, pdb_file, check_point, GPU_index=0,
-        output_traj="output.dcd", output_log="output.log", output_cm=None,
-        report_time=10*u.picoseconds, sim_time=10*u.nanoseconds):
+def openmm_simulate_amber_explicit(
+        pdb_file, 
+        top_file=None, 
+        check_point=None, 
+        GPU_index=0,
+        output_traj="output.dcd", 
+        output_log="output.log", 
+        output_cm=None,
+        report_time=10*u.picoseconds, 
+        sim_time=10*u.nanoseconds,
+        reeval_time=None, 
+        ):
     """
-    Start and run an OpenMM NVT simulation with Langevin integrator at 2 fs 
+    Start and run an OpenMM NPT simulation with Langevin integrator at 2 fs 
     time step and 300 K. The cutoff distance for nonbonded interactions were 
     set at 1.0 nm, which commonly used along with Amber force field. Long-range
     nonbonded interactions were handled with PME. 
@@ -211,6 +219,15 @@ def openmm_simulate_amber_npt(top_file, pdb_file, check_point, GPU_index=0,
         The timespan of the simulation trajectory
     """
 
+    # set up save dir for simulation results 
+    work_dir = os.getcwd() 
+    time_label = int(time.time())
+    omm_path = create_md_path(time_label) 
+    print(f"Running simulation at {omm_path}")
+
+    # setting up running path  
+    os.chdir(omm_path)
+
     top = pmd.load_file(top_file, xyz = pdb_file)
 
     system = top.createSystem(nonbondedMethod=app.PME, nonbondedCutoff=1*u.nanometer,
@@ -228,12 +245,21 @@ def openmm_simulate_amber_npt(top_file, pdb_file, check_point, GPU_index=0,
 
     simulation = app.Simulation(top.topology, system, integrator, platform, properties)
 
-    simulation.context.setPositions(top.positions)
+    # simulation.context.setPositions(top.positions)
+    if pdb.get_coordinates().shape[0] == 1: 
+        simulation.context.setPositions(pdb.positions) 
+        shutil.copy2(pdb_file, './')
+    else: 
+        positions = random.choice(pdb.get_coordinates())
+        simulation.context.setPositions(positions/10) 
+        #parmed \AA to OpenMM nm
+        pdb.write_pdb('start.pdb', coordinates=positions) 
 
     simulation.minimizeEnergy()
+    simulation.context.setVelocitiesToTemperature(300*u.kelvin, random.randint(1, 10000))
+    simulation.step(int(100*u.picoseconds / (2*u.femtoseconds)))
 
     report_freq = int(report_time/dt)
-    simulation.context.setVelocitiesToTemperature(10*u.kelvin, random.randint(1, 10000))
     simulation.reporters.append(app.DCDReporter(output_traj, report_freq))
     if output_cm:
         simulation.reporters.append(ContactMapReporter(output_cm, report_freq))
@@ -246,3 +272,51 @@ def openmm_simulate_amber_npt(top_file, pdb_file, check_point, GPU_index=0,
         simulation.loadCheckpoint(check_point)
     nsteps = int(sim_time/dt)
     simulation.step(nsteps)
+
+    if reeval_time: 
+        nsteps = int(reeval_time/dt) 
+        niter = int(sim_time/reeval_time) 
+        for i in range(niter): 
+            if os.path.exists('../halt'): 
+                return 
+            elif os.path.exists('new_pdb'):
+                print("Found new.pdb, starting new sim...") 
+
+                # cleaning up old runs 
+                del simulation
+                # starting new simulation with new pdb
+                with open('new_pdb', 'r') as fp: 
+                    new_pdb = fp.read().split()[0] 
+                os.chdir(work_dir)
+                openmm_simulate_amber_explicit(
+                        new_pdb, top_file=top_file, 
+                        check_point=None, 
+                        GPU_index=GPU_index,
+                        output_traj=output_traj, 
+                        output_log=output_log, 
+                        output_cm=output_cm,
+                        report_time=report_time, 
+                        sim_time=sim_time,
+                        reeval_time=reeval_time, 
+                        )
+            else: 
+                simulation.step(nsteps)
+    else: 
+        nsteps = int(sim_time/dt)
+        simulation.step(nsteps)
+
+    os.chdir(work_dir)
+    if not os.path.exists('../halt'): 
+        openmm_simulate_amber_explicit(
+                pdb_file, top_file=top_file, 
+                check_point=None, 
+                GPU_index=GPU_index,
+                output_traj=output_traj, 
+                output_log=output_log, 
+                output_cm=output_cm,
+                report_time=report_time, 
+                sim_time=sim_time,
+                reeval_time=reeval_time, 
+                )
+    else: 
+        return  
