@@ -7,6 +7,11 @@
 #BSUB -nnodes 1
 # End LSF directives and begin shell commands
 date
-source activate hm0 
-module load cuda/9.1.85
-jsrun -n 1 -a 1 -g 1 python train_cvae.py  -f cvae_input.h5  
+source activate py3 
+module load cuda/10.1.168
+jsrun -n 1 -a 1 -g 1 python train_cvae.py -f ../MD_to_CVAE/cvae_input.h5 -b 100  -g 0 & 
+jsrun -n 1 -a 1 -g 1 python train_cvae.py -f ../MD_to_CVAE/cvae_input.h5 -b 100  -g 1 & 
+jsrun -n 1 -a 1 -g 1 python train_cvae.py -f ../MD_to_CVAE/cvae_input.h5 -b 100  -d 4  -g 2 & 
+jsrun -n 1 -a 1 -g 1 python train_cvae.py -f ../MD_to_CVAE/cvae_input.h5 -b 100  -d 4  -g 3 &
+jsrun -n 1 -a 1 -g 1 python train_cvae.py -f ../MD_to_CVAE/cvae_input.h5 -b 100  -d 5  -g 4 &
+jsrun -n 1 -a 1 -g 1 python train_cvae.py -f ../MD_to_CVAE/cvae_input.h5 -b 100  -d 5  -g 5 

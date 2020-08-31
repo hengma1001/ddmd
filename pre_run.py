@@ -8,8 +8,9 @@ if len(sys.argv) > 1:
 else: 
     status = 'fail'
 
-print status 
-omm_dirs = glob.glob('MD_exps/fs-pep/omm_runs*') 
+os.system("ps -f -u $USER | grep rp.pmgr_launching.0 | grep -v grep | cut -c 9-15 | xargs -n 1 -t kill")
+print(status )
+omm_dirs = glob.glob('MD_exps/omm_runs*') 
 cvae_dirs = glob.glob('CVAE_exps/cvae_runs_*') 
 jsons = glob.glob('Outlier_search/*json') 
 
@@ -34,7 +35,7 @@ for json in jsons:
 if os.path.isdir('Outlier_search/outlier_pdbs'): 
     shutil.move('Outlier_search/outlier_pdbs', outlier_save) 
 
-sandbox_path = '/gpfs/alpine/bip179/scratch/hm0/radical.pilot.sandbox' 
+sandbox_path = '/gpfs/alpine/med110/scratch/hm0/radical.pilot.sandbox' 
 local_entk_path = sorted(glob.glob('re.session.*'))[-1] 
 shutil.move(local_entk_path, result_save) 
 sandbox_src = os.path.join(sandbox_path, local_entk_path) 
