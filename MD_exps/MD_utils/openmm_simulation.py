@@ -127,7 +127,9 @@ def openmm_simulate_amber_implicit(
         nsteps = int(reeval_time/dt) 
         niter = int(sim_time/reeval_time) 
         for i in range(niter): 
-            if os.path.exists('new_pdb'):
+            if os.path.exists('../halt'): 
+                return 
+            elif os.path.exists('new_pdb'):
                 print("Found new.pdb, starting new sim...") 
 
                 # cleaning up old runs 
@@ -166,6 +168,8 @@ def openmm_simulate_amber_implicit(
                 sim_time=sim_time,
                 reeval_time=reeval_time, 
                 )
+    else: 
+        return  
 
 
 

@@ -143,6 +143,10 @@ while not os.path.exists("halt"):
         # Make a dict contains outliers and their RMSD
         # outlier_pdb_RMSD = dict(zip(restart_pdbs, R.rmsd[:,2]))
         restart_pdbs = [pdb for _, pdb in sorted(zip(R.rmsd[:,2], restart_pdbs))] 
+        if np.min(R.rmsd[:,2]) < 0.1: 
+            with open('../halt', 'w'): 
+                pass
+            break 
 
     # identify currently running MDs 
     running_MDs = [md for md in omm_runs if not os.path.exists(md + '/new_pdb')]

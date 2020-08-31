@@ -44,10 +44,10 @@ pdb_file = os.path.join(md_path, 'pdb/100-fs-peptide-400K.pdb')
 top_file = None 
 ref_pdb_file = os.path.join(md_path, 'pdb/fs-peptide.pdb')
 
-N_jobs_MD = 20
-N_jobs_ML = 3
+N_jobs_MD = 120
+N_jobs_ML = 11
 
-hrs_wt = 2 
+hrs_wt = 12 
 queue = 'batch'
 proj_id = 'med110'
 
@@ -109,7 +109,7 @@ class DeepDriveMD:
             t1.arguments += ['--pdb_file', pdb_file]
             if top_file: 
                 t1.arguments += ['--topol', top_file]
-            t1.arguments += ['--length', 100]
+            t1.arguments += ['--length', 1000]
 
             # assign hardware the task 
             t1.cpu_reqs = {
@@ -151,7 +151,7 @@ class DeepDriveMD:
         t2.arguments = [
                 '%s/MD_to_CVAE.py' % agg_path, 
                 '--sim_path', md_path, 
-                '--train_frames', 10000]
+                '--train_frames', 100000]
 
         # assign hardware the task 
         t2.cpu_reqs = {
@@ -302,8 +302,8 @@ if __name__ == '__main__':
     DDmd = DeepDriveMD(
             num_MD=N_jobs_MD, 
             num_ML=N_jobs_ML,
-            num_outliers=100,
-            t_timeout=10)
+            num_outliers=500,
+            t_timeout=20)
     p1 = DDmd.generate_pipeline()
     # Create Application Manager
     # appman = AppManager()
