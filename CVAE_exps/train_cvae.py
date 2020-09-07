@@ -22,7 +22,7 @@ parser.add_argument(
     help="Number of dimensions in latent space")
 parser.add_argument("-gpu", default=0, help="gpu_id")
 parser.add_argument(
-    "-b", "--batch_size", default=1000, 
+    "-b", "--batch", default=1000, 
     help="Batch size for CVAE training") 
 
 args = parser.parse_args()
@@ -30,6 +30,7 @@ args = parser.parse_args()
 cvae_input = args.f
 hyper_dim = int(args.dim) 
 gpu_id = args.gpu
+batch_size = int(args.batch)
 work_dir = os.getcwd() 
 
 old_num_frame = 0 
@@ -46,13 +47,15 @@ while not os.path.exists("../halt"):
             continue 
         elif num_frame > old_num_frame:
             old_num_frame = num_frame
-            # run cvae 
-            cvae = run_cvae(gpu_id, cvae_input, hyper_dim=hyper_dim)
-
             time_label = int(time.time())
             cvae_path = f'cvae_runs_{hyper_dim:02}_{time_label}'
             os.mkdir(cvae_path)
-
+            # run cvae 
+            cvae = run_cvae(
+                    gpu_id, cvae_input, 
+                    hyper_dim=hyper_dim, 
+                    batch_size=batch_size)
+            
             model_weight = cvae_path + '/cvae_weight.h5' 
             model_file = cvae_path + '/cvae_model.h5' 
             loss_file = cvae_path + '/loss.npy' 

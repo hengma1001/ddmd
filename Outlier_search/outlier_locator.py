@@ -34,7 +34,8 @@ args = parser.parse_args()
 
 # pdb file for MDAnalysis 
 pdb_file = os.path.abspath(args.pdb) 
-ref_pdb_file = os.path.abspath(args.ref) 
+ref_pdb_file = args.ref
+
 n_outliers = int(args.n_out)
 time_out = float(args.timeout)
 iteration = 0 
@@ -42,30 +43,33 @@ iteration = 0
 while not os.path.exists("halt"):
     # get all omm_runs path 
     md_path = args.md
-    omm_runs = sorted(glob(os.path.join(md_path, 'omm_runs_*')))
 
     # Find all the trained model weights 
     cvae_path = args.cvae
-    cvae_runs = sorted(glob(os.path.join(cvae_path, 'cvae_runs_*'))) 
+    cvae_results = sorted(glob(os.path.join(cvae_path, 'cvae_runs_*/*npy'))) 
 
     # need to wait for training to finish 
-    while cvae_runs == []: 
-        omm_runs = sorted(glob(os.path.join(md_path, 'omm_runs_*')))
-        cvae_runs = sorted(glob(os.path.join(cvae_path, 'cvae_runs_*')))
+    while cvae_results == []: 
+        cvae_results = sorted(glob(os.path.join(cvae_path, 'cvae_runs_*/*npy')))
+
+    omm_runs = sorted(glob(os.path.join(md_path, 'omm_runs_*')))
+    cvae_runs = sorted(glob(os.path.join(cvae_path, 'cvae_runs_*')))
+    if iteration == 0: 
+        time.sleep(120) 
     # wait for a few to minutes for cvae finish writing output
-    time.sleep(120)
 
     # identify the latest models with lowest loss 
     model_dims = [os.path.basename(cvae).split('_')[2] for cvae in cvae_runs]
     model_dims = sorted(list(set(model_dims)))
     cvae_loss = []
     for i, dim in enumerate(model_dims): 
-        latest_run = sorted(glob(os.path.join(cvae_path, f'cvae_runs_{dim}_*')))[-1] 
-        model_loss = np.load(os.path.join(latest_run, 'loss.npy'))[-1]
+        latest_loss = sorted(glob(os.path.join(cvae_path, f'cvae_runs_{dim}_*/loss.npy')))[-1] 
+        model_loss = np.load(latest_loss)[-1]
         cvae_loss.append(model_loss)
 
     sel_dim = model_dims[np.argmin(cvae_loss)]
-    sel_model = sorted(glob(os.path.join(cvae_path, f'cvae_runs_{sel_dim}_*')))[-1]
+    sel_loss = sorted(glob(os.path.join(cvae_path, f'cvae_runs_{sel_dim}_*/loss.npy')))[-1]
+    sel_model = os.path.dirname(sel_loss) 
     sel_model_weight = sel_model + '/cvae_weight.h5'
 
     print(("Using model {} with {}... ".format(sel_model, min(cvae_loss))))

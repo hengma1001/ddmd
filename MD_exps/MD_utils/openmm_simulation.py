@@ -246,14 +246,14 @@ def openmm_simulate_amber_explicit(
     simulation = app.Simulation(top.topology, system, integrator, platform, properties)
 
     # simulation.context.setPositions(top.positions)
-    if pdb.get_coordinates().shape[0] == 1: 
-        simulation.context.setPositions(pdb.positions) 
+    if top.get_coordinates().shape[0] == 1: 
+        simulation.context.setPositions(top.positions) 
         shutil.copy2(pdb_file, './')
     else: 
-        positions = random.choice(pdb.get_coordinates())
+        positions = random.choice(top.get_coordinates())
         simulation.context.setPositions(positions/10) 
         #parmed \AA to OpenMM nm
-        pdb.write_pdb('start.pdb', coordinates=positions) 
+        top.write_pdb('start.pdb', coordinates=positions) 
 
     simulation.minimizeEnergy()
     simulation.context.setVelocitiesToTemperature(300*u.kelvin, random.randint(1, 10000))

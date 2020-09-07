@@ -43,7 +43,7 @@ while not os.path.exists("../halt"):
         try: 
             n_frames = get_num_frames(cm_files)
             break
-        except KeyError: 
+        except: 
             time.sleep(60) 
 
     if n_frames > num_frame_cap:
@@ -61,7 +61,7 @@ while not os.path.exists("../halt"):
             except: 
                 continue 
 
-        num_frame_cap = int(num_frame_cap * 1.6) 
+        num_frame_cap = int(n_frames * 1.6) 
         print(f"Update frame cap to {num_frame_cap}")
     elif n_iter % 10 == 0: 
         print(f"accumulated {n_frames} frames...")

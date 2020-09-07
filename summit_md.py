@@ -40,17 +40,17 @@ agg_path = os.path.join(base_path, 'MD_to_CVAE')
 cvae_path = os.path.join(base_path, 'CVAE_exps') 
 outlier_path = os.path.join(base_path, 'Outlier_search') 
 
-pdb_file = os.path.join(md_path, 'pdb/100-fs-peptide-400K.pdb') 
-top_file = None 
-ref_pdb_file = os.path.join(md_path, 'pdb/fs-peptide.pdb')
+pdb_file = os.path.join(md_path, 'pdb/prot.pdb') 
+top_file = os.path.join(md_path, 'pdb/prot.prmtop')
 
-N_jobs_MD = 120
-N_jobs_ML = 11
+N_jobs_MD = 20 
+N_jobs_ML = 3
 
-hrs_wt = 12 
+hrs_wt = 6 
 queue = 'batch'
 proj_id = 'med110'
 
+batch_size = 256
 
 class DeepDriveMD:
     """
@@ -151,7 +151,7 @@ class DeepDriveMD:
         t2.arguments = [
                 '%s/MD_to_CVAE.py' % agg_path, 
                 '--sim_path', md_path, 
-                '--train_frames', 100000]
+                '--train_frames', 10000]
 
         # assign hardware the task 
         t2.cpu_reqs = {
@@ -186,13 +186,14 @@ class DeepDriveMD:
 
             t3.pre_exec += ['export PYTHONPATH=%s/CVAE_exps:$PYTHONPATH' % base_path]
             t3.pre_exec += ['cd %s' % cvae_path]
-            t3.pre_exec += [f"sleep {i}"]
+            # t3.pre_exec += [f"sleep {i}"]
             dim = i + 3 
             t3.executable = ['%s/bin/python' % conda_path]  # train_cvae.py
             t3.arguments = [
                     '%s/train_cvae.py' % cvae_path, 
                     '--h5_file', '%s/cvae_input.h5' % agg_path, 
-                    '--dim', dim] 
+                    '--dim', dim, 
+                    '--batch', batch_size] 
             
             t3.cpu_reqs = {
                     'processes': 1,
@@ -235,7 +236,6 @@ class DeepDriveMD:
                 '--md',  md_path, 
                 '--cvae', cvae_path, 
                 '--pdb', pdb_file, 
-                '--ref', ref_pdb_file,
                 '--n_out', self.num_outliers, 
                 '--timeout', self.t_timeout]
 

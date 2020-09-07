@@ -6,9 +6,9 @@ def CVAE(input_shape, latent_dim=3):
     image_size = input_shape[:-1]
     channels = input_shape[-1]
     conv_layers = 4
-    feature_maps = [64,64,64,64]
+    feature_maps = [64,64,64,32]
     filter_shapes = [(3,3),(3,3),(3,3),(3,3)]
-    strides = [(1,1),(2,2),(1,1),(1,1)]
+    strides = [(1,1),(2,2),(2,2),(1,1)]
     dense_layers = 1
     dense_neurons = [128]
     dense_dropouts = [0]
@@ -21,10 +21,11 @@ def CVAE(input_shape, latent_dim=3):
     autoencoder.model.summary()
     return autoencoder
 
-def run_cvae(gpu_id, cm_file, hyper_dim=3, epochs=100, batch_size=1000): 
+def run_cvae(gpu_id, cm_file, hyper_dim=3, epochs=100, batch_size=1000, skip=1): 
     # read contact map from h5 file 
     cm_h5 = h5py.File(cm_file, 'r', libver='latest', swmr=True)
-    cm_data_input = cm_h5[u'contact_maps'] 
+    cm_data_input = cm_h5[u'contact_maps'].value
+    cm_data_input = cm_data_input[::skip]
 
     # splitting data into train and validation
     train_val_split = int(0.8 * len(cm_data_input))
