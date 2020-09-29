@@ -108,7 +108,7 @@ def openmm_simulate_amber_implicit(
     # equilibrate
     simulation.minimizeEnergy() 
     simulation.context.setVelocitiesToTemperature(300*u.kelvin, random.randint(1, 10000))
-    simulation.step(int(100*u.picoseconds / (2*u.femtoseconds)))
+    # simulation.step(int(100*u.picoseconds / (2*u.femtoseconds)))
 
     # setting up reports 
     report_freq = int(report_time/dt)
@@ -257,7 +257,7 @@ def openmm_simulate_amber_explicit(
 
     simulation.minimizeEnergy()
     simulation.context.setVelocitiesToTemperature(300*u.kelvin, random.randint(1, 10000))
-    simulation.step(int(100*u.picoseconds / (2*u.femtoseconds)))
+    # simulation.step(int(100*u.picoseconds / (2*u.femtoseconds)))
 
     report_freq = int(report_time/dt)
     simulation.reporters.append(app.DCDReporter(output_traj, report_freq))
@@ -270,8 +270,6 @@ def openmm_simulate_amber_explicit(
 
     if check_point:
         simulation.loadCheckpoint(check_point)
-    nsteps = int(sim_time/dt)
-    simulation.step(nsteps)
 
     if reeval_time: 
         nsteps = int(reeval_time/dt) 
