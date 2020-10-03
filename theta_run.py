@@ -14,12 +14,10 @@ MPIRun.set_preamble_commands(
 )
 
 
-
-app_cmd = (
-        "python run_openmm.py -f pdb/100-fs-peptide-400K.pdb -l 50"
-#        "singularity exec --nv -B ./thetaGPU-launcher:/soft "
-#        "rapidsai-dev_0.15-cuda11.0-devel-ubuntu18.04-py3.7.sif "
-#        "/opt/conda/envs/rapids/bin/python /soft/lr.py "
+md_path = os.path.abspath("./MD_exps") 
+pdb_file = md_path + "/pdb/100-fs-peptide-400K.pdb"
+md_cmd = (
+        f"python run_openmm.py -f {pdb_file} -l 50"
 )
 
 
@@ -36,7 +34,7 @@ for i in range(8):
     output_file = NamedTemporaryFile(dir="./test-outputs", delete=False)
 
     run = MPIRun(
-        cmd_line=app_cmd,
+        cmd_line=md_cmd,
         node_list=nodes,
         ranks_per_node=1,
         gpu_ids=gpus,

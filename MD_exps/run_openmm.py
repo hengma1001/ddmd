@@ -2,7 +2,7 @@ import simtk.unit as u
 import sys, os, shutil 
 import argparse 
 
-from MD_utils.openmm_simulation import openmm_simulate_amber_explicit 
+from MD_utils.openmm_simulation import openmm_simulate_amber_implicit 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--pdb_file", dest="f", help="pdb file")
@@ -33,7 +33,7 @@ gpu_index = 0 # os.environ["CUDA_VISIBLE_DEVICES"]
 print("MD runs started...")
 
 # check_point = None
-openmm_simulate_amber_explicit(
+openmm_simulate_amber_implicit(
         pdb_file,
         top_file=top_file,
         check_point=check_point,
