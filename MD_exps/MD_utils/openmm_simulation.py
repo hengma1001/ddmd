@@ -176,6 +176,7 @@ def openmm_simulate_amber_explicit(
         pdb_file, 
         top_file=None, 
         check_point=None, 
+        label_system=False,
         GPU_index=0,
         output_traj="output.dcd", 
         output_log="output.log", 
@@ -222,7 +223,12 @@ def openmm_simulate_amber_explicit(
     # set up save dir for simulation results 
     work_dir = os.getcwd() 
     time_label = int(time.time())
-    omm_path = create_md_path(time_label) 
+    if label_system: 
+        pdb_path = os.path.dirname(pdb_file) 
+        pdb_label = os.path.basename(pdb_path).replace("input_", "")
+        omm_path = create_md_path(time_label, sys_label=pdb_label)
+    else: 
+        omm_path = create_md_path(time_label) 
     print(f"Running simulation at {omm_path}")
 
     # setting up running path  

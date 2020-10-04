@@ -15,9 +15,11 @@ MPIRun.set_preamble_commands(
 
 
 md_path = os.path.abspath("./MD_exps") 
-pdb_file = md_path + "/pdb/100-fs-peptide-400K.pdb"
+input_path = '/lus/theta-fs0/projects/RL-fold/hengma/nsp10_16/amber_setup/input_comp_sep' 
+pdb_file = input_path + "/comp_sep.pdb"
+top_file = input_path + "/comp_sep.top"
 md_cmd = (
-        f"python run_openmm.py -f {pdb_file} -l 50"
+        f"python run_openmm.py -f {pdb_file} -p {top_file} -l 5"
 )
 
 
