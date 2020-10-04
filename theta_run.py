@@ -1,4 +1,5 @@
 import os
+import glob
 from tempfile import NamedTemporaryFile
 from launcher import (
     ComputeNodeManager, 
@@ -15,13 +16,8 @@ MPIRun.set_preamble_commands(
 
 
 md_path = os.path.abspath("./MD_exps") 
-input_path = '/lus/theta-fs0/projects/RL-fold/hengma/nsp10_16/amber_setup/input_comp_sep' 
-pdb_file = input_path + "/comp_sep.pdb"
-top_file = input_path + "/comp_sep.top"
-md_cmd = (
-        f"python run_openmm.py -f {pdb_file} -p {top_file} -l 5"
-)
-
+input_paths = glob.glob('/lus/theta-fs0/projects/RL-fold/hengma/nsp10_16/amber_setup/input_*')
+n_sim = len(input_paths) 
 
 node_manager = ComputeNodeManager()
 num_nodes = len(node_manager.nodes)
@@ -30,9 +26,16 @@ runs = []
 os.makedirs("test-outputs", exist_ok=True)
 
 # 4 Single GPU Runs
-for i in range(8):
+for i in range(n_sim):
     nodes, gpus = node_manager.request(num_nodes=1, gpus_per_node=1)
 
+    input_path = input_paths[i]
+    sys_label = os.path.basename(input_path).replace('input_', '')
+    pdb_file = input_path + f"/{sys_label}.pdb"
+    top_file = input_path + f"/{sys_label}.top"
+    md_cmd = (
+            f"python run_openmm.py -f {pdb_file} -p {top_file} -l 10"
+    )
     output_file = NamedTemporaryFile(dir="./test-outputs", delete=False)
 
     run = MPIRun(
