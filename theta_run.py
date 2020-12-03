@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import glob
 from tempfile import NamedTemporaryFile
 from launcher import (
     ComputeNodeManager, 
@@ -57,10 +58,14 @@ os.makedirs("test-outputs", exist_ok=True)
 for i in range(n_sim):
     nodes, gpus = node_manager.request(num_nodes=1, gpus_per_node=1)
 
+    input_path = input_paths[i]
+    sys_label = os.path.basename(input_path).replace('input_', '')
+    pdb_file = input_path + f"/{sys_label}.pdb"
+    top_file = input_path + f"/{sys_label}.top"
     md_cmd = (
-            f"{python_exe} run_openmm.py -f {pdb_file} -l 100000"
+            f"python run_openmm.py -f {pdb_file} -p {top_file} -l 10"
     )
-    output_file = "./test-outputs" + f"/MD_run_{i:03}"
+    output_file = f"./test-outputs/MD_{i}"
 
     run = MPIRun(
         cmd_line=md_cmd,
