@@ -26,7 +26,7 @@ else:
 
 # delete previously existing cvae input file 
 if os.path.exists('cvae_input.h5'):
-	os.remove('cvae_input.h5')
+    os.remove('cvae_input.h5')
 
 num_frame_cap = int(args.l)
 

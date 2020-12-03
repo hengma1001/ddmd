@@ -20,6 +20,8 @@ parser.add_argument("-m", "--md", help="Input: MD simulation directory")
 parser.add_argument("-c", "--cvae", help="Input: CVAE model directory")
 parser.add_argument("-p", "--pdb", help="Input: pdb file") 
 parser.add_argument("-r", "--ref", default=None, help="Input: Reference pdb for RMSD") 
+parser.add_argument("-g", "--gpus", default=0, 
+        help="Input: ids of gpu to use") 
 parser.add_argument(
     "-n", "--n_out", default=500, 
     help="Input: Approx number of outliers to gather")  
@@ -31,6 +33,11 @@ parser.add_argument(
     )
 
 args = parser.parse_args()
+
+# specify gpu id
+gpu_id = args.gpus
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]=str(gpu_id)
 
 # pdb file for MDAnalysis 
 pdb_file = os.path.abspath(args.pdb) 
@@ -79,7 +86,8 @@ while not os.path.exists("halt"):
     cm_files_list = sorted(glob(os.path.join(md_path, 'omm_runs_*/output_cm.h5')))
     cm_predict, train_data_length = predict_from_cvae(
             sel_model_weight, cm_files_list, 
-            hyper_dim=int(sel_dim), padding=4) 
+            hyper_dim=int(sel_dim), padding=4, 
+            gpu_id=gpu_id) 
 
     # A record of every trajectory length
     omm_runs = [os.path.dirname(cm_file) for cm_file in cm_files_list]

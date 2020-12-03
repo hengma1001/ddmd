@@ -65,9 +65,9 @@ def write_pdb_frame(traj_file, pdb_file, frame_number, output_pdb):
     return output_pdb
 
 
-def predict_from_cvae(model_weight, cm_files, hyper_dim=3, padding=2): 
+def predict_from_cvae(model_weight, cm_files, hyper_dim=3, padding=2, gpu_id=0): 
     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"]=str(0)  
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(gpu_id)
     # decoy run to identify cvae input shape 
     cm_h5 = h5py.File(cm_files[0], 'r', libver='latest', swmr=True)
     cm_data = cm_h5[u'contact_maps']
