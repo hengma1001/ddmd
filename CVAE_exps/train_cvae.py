@@ -20,7 +20,7 @@ parser.add_argument(
 parser.add_argument(
     "-d", "--dim", default=3, 
     help="Number of dimensions in latent space")
-parser.add_argument("-gpu", default=0, help="gpu_id")
+parser.add_argument("-g", "--gpu", default=0, help="gpu_id")
 parser.add_argument(
     "-b", "--batch", default=1000, 
     help="Batch size for CVAE training") 

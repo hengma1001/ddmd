@@ -23,7 +23,7 @@ parser.add_argument("-r", "--ref", default=None, help="Input: Reference pdb for 
 parser.add_argument("-g", "--gpus", default=0, 
         help="Input: ids of gpu to use") 
 parser.add_argument(
-    "-n", "--n_out", default=500, 
+    "-n", "--n_out", default=100, 
     help="Input: Approx number of outliers to gather")  
 parser.add_argument(
     "-t", "--timeout", default=10, 
@@ -180,7 +180,8 @@ while not os.path.exists("halt"):
             with open(md + '/new_pdb', 'w') as fp: 
                 fp.write(restart_pdb)
 
-    print(f"=======>Iteration {iteration} done<========")
+    print(f"\n\n\n=======>Iteration {iteration} done<========\n\n")
+    time.sleep(120)
     iteration += 1
 
 
