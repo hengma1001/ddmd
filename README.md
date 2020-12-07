@@ -1,15 +1,22 @@
 # entk_cvae_md
 A script that runs Molecular Dynamics simulations under supervision of Machine 
-Learning model on Summit@ORNL through Radical toolkit. 
+Learning model on local workstation. 
 
-```bash
-module load python/2.7.15-anaconda2-5.3.0 
-source activate /ccs/home/hm0/.conda/envs/entk_py3
+## Environment setup 
+The conda environment can be built on local machine via 
 ```
+conda env create -f ddmd.yml
+```
+.
 
-The code is running as a preliminary fashion and will be cleaned up soon. 
+It should create a environment accommodates all workflow dependencies. 
 
-All the compuational module is available in `omm` envs. 
-```bash 
-source activate /ccs/home/hm0/.conda/envs/omm 
-``` 
+## Run Workflow. 
+
+1. Set up the input. 
+    The system needs input in the same format of MD simulations, pdb and 
+    topology file. Right file should be assigned in `run_local.py`. 
+The system is ready to run at this point, except if the system size 
+is too big for the current CVAE setup. 
+2. Adjust CVAE parameter
+    The CVAE parameters can be found in `CVAE_exps/cvae/CVAE.py`. 
