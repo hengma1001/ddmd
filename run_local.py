@@ -1,6 +1,7 @@
 import os
 import time
 import glob
+import atexit
 import GPUtil
 import logging
 from tempfile import NamedTemporaryFile
@@ -27,8 +28,8 @@ python_exe = f'{conda_path}/bin/python'
 
 # MD setup 
 md_path = os.path.abspath("./MD_exps") 
-pdb_file = md_path + "/pdb/100-fs-peptide-400K.pdb"
-ref_pdb = md_path + "/pdb/fs-peptide.pdb"
+pdb_file = md_path + "/pdb/prot.pdb"
+top_file = md_path + "/pdb/prot.prmtop"
 
 # collecter setup 
 collect_path = os.path.abspath("./MD_to_CVAE/")
@@ -71,7 +72,7 @@ for i in range(n_sim):
     # pdb_file = input_path + f"/{sys_label}.pdb"
     # top_file = input_path + f"/{sys_label}.top"
     md_cmd = (
-            f"python run_openmm.py -f {pdb_file} -l 100"
+            f"python run_openmm.py -f {pdb_file} -p {top_file} -l 100"
     )
     output_file = f"./test-outputs/MD_{i}"
 
@@ -122,7 +123,7 @@ for i in range(n_train):
 gpus = gpu_ids.pop()
 inf_cmd = f"python outlier_locator.py "\
           f"-m {md_path} -c {train_path} "\
-          f"-p {ref_pdb} -r {ref_pdb} -g {gpus}" 
+          f"-p {pdb_file} -g {gpus}" 
 output_file = "./test-outputs" + "/inference_output" 
 env_dict={"PYTHONPATH": train_path}
 run = MPIRun(
@@ -134,6 +135,14 @@ run = MPIRun(
         envs_dict=env_dict,
         )
 runs.append(run) 
+
+# set up cleanup at exiting program 
+def cleanup(): 
+    for p in runs: 
+        p.kill()
+    logger.info("cleaned up!") 
+
+atexit.register(cleanup)
 
 print("waiting on", len(runs), "runs to finish...")
 while runs:

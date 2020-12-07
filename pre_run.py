@@ -9,6 +9,7 @@ else:
     status = 'fail'
 
 # os.system("ps -f -u $USER | grep rp.pmgr_launching.0 | grep -v grep | cut -c 9-15 | xargs -n 1 -t kill")
+# ps -ef | grep python | grep entk |awk '{print $2}' | xargs kill -9
 print(status )
 omm_dirs = glob.glob('MD_exps/omm_runs*') 
 cvae_dirs = glob.glob('CVAE_exps/cvae_runs_*') 

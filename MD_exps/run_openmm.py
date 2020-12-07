@@ -2,7 +2,7 @@ import simtk.unit as u
 import sys, os, shutil 
 import argparse 
 
-from MD_utils.openmm_simulation import openmm_simulate_amber_implicit as simulate 
+from MD_utils.openmm_simulation import openmm_simulate_amber_explicit as simulate 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--pdb_file", dest="f", help="pdb file")
@@ -35,7 +35,7 @@ print("MD runs started...")
 # check_point = None
 simulate(
         pdb_file,
-        # top_file=top_file,
+        top_file=top_file,
         check_point=check_point,
         # label_system=True,
         GPU_index=gpu_index,
