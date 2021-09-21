@@ -16,6 +16,9 @@ def create_md_path(label, sys_label=None):
         return create_md_path(label + 1, sys_label=sys_label)
 
 
+def get_dir_base(file_path): 
+    return os.path.basename(os.path.dirname(file_path))
+
 def touch_file(file): 
     """
     create an empty file for bookkeeping sake

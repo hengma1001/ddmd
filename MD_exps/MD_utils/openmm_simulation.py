@@ -11,7 +11,7 @@ import simtk.openmm as omm
 import simtk.unit as u
 
 from MD_utils.openmm_reporter import ContactMapReporter
-from MD_utils.utils import create_md_path, touch_file
+from MD_utils.utils import create_md_path, get_dir_base
 
 
 def openmm_simulate_amber_implicit(
@@ -233,6 +233,9 @@ def openmm_simulate_amber_explicit(
 
     # setting up running path  
     os.chdir(omm_path)
+    if check_point: 
+        chp_save = get_dir_base(check_point) + '.chk'
+        shutil.copy(check_point, chp_save)
 
     top = pmd.load_file(top_file, xyz = pdb_file)
 
@@ -308,6 +311,43 @@ def openmm_simulate_amber_explicit(
     else: 
         nsteps = int(sim_time/dt)
         simulation.step(nsteps)
+        if os.path.exists('../halt'): 
+            return 
+        elif os.path.exists('new_pdb'): 
+            print("Found new.pdb, starting new sim...")
+            del simulation 
+            with open('new_pdb', 'r') as fp:
+                new_pdb = fp.read().split()[0]
+            os.chdir(work_dir) 
+            openmm_simulate_amber_explicit(
+                    new_pdb, top_file=top_file,
+                    check_point=None,
+                    GPU_index=GPU_index,
+                    output_traj=output_traj,
+                    output_log=output_log,
+                    output_cm=output_cm,
+                    report_time=report_time,
+                    sim_time=sim_time,
+                    reeval_time=reeval_time,
+                    )
+        elif os.path.exists('checkpnt.chk'): 
+            print("Continuing simulation with check point...")
+            check_point = os.path.abspath('checkpnt.chk') 
+            with open('new_pdb', 'w') as fp: 
+                fp.write(check_point)
+            os.chdir(work_dir) 
+            openmm_simulate_amber_explicit(
+                    pdb_file, top_file=top_file,
+                    check_point=check_point,
+                    GPU_index=GPU_index,
+                    output_traj=output_traj,
+                    output_log=output_log,
+                    output_cm=output_cm,
+                    report_time=report_time,
+                    sim_time=sim_time,
+                    reeval_time=reeval_time,
+                    )
+
 
     os.chdir(work_dir)
     if not os.path.exists('../halt'): 
