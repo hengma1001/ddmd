@@ -96,6 +96,9 @@ class MPIRun:
             self.outfile.close()
         return retcode
 
+    def kill(self): 
+        self.process.kill()
+
 if __name__ == "__main__":
     gpu_manager = GPUManager()
 
