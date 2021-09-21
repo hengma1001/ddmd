@@ -65,6 +65,14 @@ def write_pdb_frame(traj_file, pdb_file, frame_number, output_pdb):
     return output_pdb
 
 
+def get_cvae(model_weight, input_size, hyper_dim=3, gpu_id=0): 
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(gpu_id)
+    cvae = CVAE(input_size, hyper_dim) 
+    cvae.model.load_weights(model_weight)
+    return cvae
+
+
 def predict_from_cvae(model_weight, cm_files, hyper_dim=3, padding=2, gpu_id=0): 
     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"]=str(gpu_id)
@@ -76,17 +84,21 @@ def predict_from_cvae(model_weight, cm_files, hyper_dim=3, padding=2, gpu_id=0):
     cm_h5.close()
     # load weight 
     cvae.model.load_weights(model_weight)
-    train_data_length = []
+    traj_dict = {}
     cm_predict = [] 
     for i, cm_file in enumerate(cm_files[:]): 
         # Convert everything to cvae input
         cm_h5 = h5py.File(cm_file, 'r', libver='latest', swmr=True)
-        cm_data = cm_h5[u'contact_maps']
+        try:
+            cm_data = cm_h5['contact_maps']
+        except: 
+            continue
         cvae_input = cm_to_cvae(np.array(cm_data), padding=padding)
         cm_h5.close()
 
         # A record of every trajectory length
-        train_data_length += [cvae_input.shape[0]]
+        omm_run = os.path.dirname(cm_file)
+        traj_dict[omm_run] = cvae_input.shape[0]
         # Get the predicted embeddings 
         embeddings = cvae.return_embeddings(cvae_input) 
         cm_predict.append(embeddings) 
@@ -97,7 +109,7 @@ def predict_from_cvae(model_weight, cm_files, hyper_dim=3, padding=2, gpu_id=0):
     # clean up the keras session
     del cvae 
     K.clear_session()
-    return cm_predict, train_data_length
+    return cm_predict, traj_dict
 
 
 def outliers_from_latent_loc(cm_predict, n_outliers=500, n_jobs=1): 

@@ -2,6 +2,7 @@ import os
 import time
 import random
 import shutil 
+import logging
 import argparse 
 import numpy as np 
 from glob import glob
@@ -11,8 +12,11 @@ from utils import outliers_largeset
 from utils import find_frame, write_pdb_frame 
 from  MDAnalysis.analysis.rms import RMSD
 
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
-DEBUG = 1 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+debug = 0
+logger_level = logging.DEBUG if debug else logging.INFO
+logging.basicConfig(level=logger_level, format='%(asctime)s %(message)s')
+logger = logging.getLogger(__name__)
 
 # Inputs 
 parser = argparse.ArgumentParser()
@@ -26,7 +30,7 @@ parser.add_argument(
     "-n", "--n_out", default=100, 
     help="Input: Approx number of outliers to gather")  
 parser.add_argument(
-    "-t", "--timeout", default=10, 
+    "-t", "--timeout", default=5, 
     help="Input: time to exam outliers for MD runs, \
           in which if no ouliers emerges in the latest\
           t nanoseconds (10^-9), MD run stops. "
@@ -44,9 +48,13 @@ pdb_file = os.path.abspath(args.pdb)
 ref_pdb_file = args.ref
 
 n_outliers = int(args.n_out)
-time_out = float(args.timeout)
-iteration = 0 
 
+time_out = float(args.timeout)
+time_frame = 0.05
+
+# iteration counter
+iteration = 0 
+cvae_dim = 0 
 while not os.path.exists("halt"):
     # get all omm_runs path 
     md_path = args.md
@@ -79,34 +87,42 @@ while not os.path.exists("halt"):
     sel_model = os.path.dirname(sel_loss) 
     sel_model_weight = sel_model + '/cvae_weight.h5'
 
-    print(("Using model {} with {}... ".format(sel_model, min(cvae_loss))))
+    logger.info(("Using model {} with {}... ".format(sel_model, min(cvae_loss))))
 
+    # if int(sel_dim) != cvae_dim: 
+    #     cvae = get_cvae(
+    #             model, input_size, 
+    #             hyper_dim=int(sel_dim), 
+    #             gpu_id=gpu_id)
+    # else: 
+    #     cvae.model.load_weights(model_weight)
+        
     # Get the predicted embeddings 
     # cm_files_list = [os.path.join(omm_run, 'output_cm.h5') for omm_run in omm_runs]
     cm_files_list = sorted(glob(os.path.join(md_path, 'omm_runs_*/output_cm.h5')))
-    cm_predict, train_data_length = predict_from_cvae(
+    cm_predict, traj_dict = predict_from_cvae(
             sel_model_weight, cm_files_list, 
             hyper_dim=int(sel_dim), padding=4, 
             gpu_id=gpu_id) 
 
     # A record of every trajectory length
-    omm_runs = [os.path.dirname(cm_file) for cm_file in cm_files_list]
-    traj_dict = dict(list(zip(omm_runs, train_data_length))) 
-    print(traj_dict)
+    # omm_runs = [os.path.dirname(cm_file) for cm_file in cm_files_list]
+    # traj_dict = dict(list(zip(omm_runs, train_data_length))) 
+    # logger.debug(traj_dict)
 
     ## Unique outliers 
-    print("Starting outlier searching...")
+    logger.info("Starting outlier searching...")
     outlier_list_ranked, _ = outliers_from_latent_loc(
             cm_predict, n_outliers=n_outliers, n_jobs=12)  
-    print("Done outlier searching...")
-    # print(outlier_list_ranked)
+    logger.info(f"Done outlier searching...")
 
     # Write the outliers using MDAnalysis 
     outliers_pdb_path = os.path.abspath('./outlier_pdbs') 
     os.makedirs(outliers_pdb_path, exist_ok=True) 
-    print('Writing outliers in %s' % outliers_pdb_path)  
+    logger.debug('Writing outliers in %s' % outliers_pdb_path)  
 
     # identify new outliers 
+    logger.info("Getting new outlier from the most recent iteration...")
     new_outliers_list = [] 
     for outlier in outlier_list_ranked:
         # find the location of outlier 
@@ -120,17 +136,18 @@ while not os.path.exists("halt"):
         new_outliers_list.append(outlier_pdb_file)
         # Only write new pdbs to reduce I/O redundancy. 
         if not os.path.exists(outlier_pdb_file): 
-            print(f'New outlier at frame {num_frame} of {run_name}')
+            logger.debug(f'New outlier at frame {num_frame} of {run_name}')
             outlier_pdb = write_pdb_frame(
                     traj_file, pdb_file, num_frame, outlier_pdb_file)  
          
 
     # Clean up outdated outliers (just for bookkeeping)
+    logger.info("Removing outdated outliers...")
     outliers_list = glob(os.path.join(outliers_pdb_path, 'omm_runs*.pdb')) 
     for outlier in outliers_list: 
         if outlier not in new_outliers_list: 
             outlier_label = os.path.basename(outlier)
-            print(f'Old outlier {outlier_label} is now connected to \
+            logger.debug(f'Old outlier {outlier_label} is now connected to \
                 a cluster and removing it from the outlier list ') 
             # os.rename(outlier, os.path.join(outliers_pdb_path, '-'+outlier_label)) 
 
@@ -139,12 +156,11 @@ while not os.path.exists("halt"):
     ### Get the pdbs used once already 
     used_pdbs = glob(os.path.join(md_path, 'omm_runs_*/omm_runs_*.pdb'))
     used_pdbs_labels = [os.path.basename(used_pdb) for used_pdb in used_pdbs ]
-    print(used_pdbs_labels) 
     ### Exclude the used pdbs 
     # outliers_list = glob(os.path.join(outliers_pdb_path, 'omm_runs*.pdb'))
     restart_pdbs = [outlier for outlier in new_outliers_list \
             if os.path.basename(outlier) not in used_pdbs_labels] 
-    print("restart pdbs: ", restart_pdbs)
+    logger.info(f"restart pdbs: len(restart_pdbs) conformers...")
 
     # rank the restart_pdbs according to their RMSD to local state 
     if ref_pdb_file: 
@@ -163,13 +179,15 @@ while not os.path.exists("halt"):
     # identify currently running MDs 
     running_MDs = [md for md in omm_runs if not os.path.exists(md + '/new_pdb')]
     # decide which MD to stop, (no outliers in past 10ns/50ps = 200 frames) 
-    n_timeout = time_out / 0.05 
+    n_timeout = time_out / timestep 
     for md in running_MDs: 
         md_label = os.path.basename(md)
-        current_frames = traj_dict[md]
+        md_log = f'{md}/output.log'
+        # lines in the md log
+        current_frames = sum(1 for line in open(md_log)) - 1
         # low bound for minimal MD runs, 2 * timeout 
         if current_frames > n_timeout * 2: 
-            current_outliers = glob(outliers_pdb_path + f"{md_label}_*pdb")
+            current_outliers = glob(outliers_pdb_path + f"{md_label}_*.pdb")
             if current_outliers != []: 
                 latest_outlier = current_outliers[-1]
                 latest_frame = int(latest_outlier.split('.')[0].split('_')[-1])
@@ -179,8 +197,9 @@ while not os.path.exists("halt"):
             restart_pdb = os.path.abspath(restart_pdbs.pop(0))
             with open(md + '/new_pdb', 'w') as fp: 
                 fp.write(restart_pdb)
+            logger.debug(f"Stopping simulation at {md}, and restarting with {restart_pdb}")
 
-    print(f"\n\n\n=======>Iteration {iteration} done<========\n\n")
+    logger.info(f"\n\n\n=======>Iteration {iteration} done<========\n\n")
     time.sleep(120)
     iteration += 1
 
