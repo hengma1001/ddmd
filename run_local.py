@@ -10,7 +10,9 @@ from launcher import (
     MPIRun,
 )
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
+debug = 1
+logger_level = logging.DEBUG if debug else logging.INFO
+logging.basicConfig(level=logger_level, format='%(asctime)s %(message)s')
 logger = logging.getLogger(__name__)
 
 gpu_manager = GPUManager()
@@ -30,6 +32,7 @@ python_exe = f'{conda_path}/bin/python'
 md_path = os.path.abspath("./MD_exps") 
 pdb_file = md_path + "/pdb/prot.pdb"
 top_file = md_path + "/pdb/prot.prmtop"
+sim_length = 20
 
 # collecter setup 
 collect_path = os.path.abspath("./MD_to_CVAE/")
@@ -37,13 +40,14 @@ n_frame_1 = 1000
 
 # train setup 
 train_path = os.path.abspath("./CVAE_exps") 
+batch_size = 128
 
 # inference setup 
 inf_path = os.path.abspath("./Outlier_search") 
 
 # run setup 
-n_sim = 10
-n_train = 2 
+n_sim = 4
+n_train = 1 
 n_gpus = n_sim + n_train + 1 
 logger.info(f"Configuration: {n_sim} MDs, "\
         f"{n_train} training, and 1 inference node. "\
@@ -72,7 +76,7 @@ for i in range(n_sim):
     # pdb_file = input_path + f"/{sys_label}.pdb"
     # top_file = input_path + f"/{sys_label}.top"
     md_cmd = (
-            f"python run_openmm.py -f {pdb_file} -p {top_file} -l 100"
+            f"python run_openmm.py -f {pdb_file} -p {top_file} -l {sim_length}"
     )
     output_file = f"./test-outputs/MD_{i}"
 
@@ -105,7 +109,8 @@ for i in range(n_train):
     dim = i + 3 
     gpus = gpu_ids.pop()
     train_cmd = f"python train_cvae.py "\
-                f"-f {collect_path}/cvae_input.h5 -d {dim} -g {gpus}" 
+                f"-f {collect_path}/cvae_input.h5 "\
+                f"-d {dim} -g {gpus} -b {batch_size}" 
     output_file = "./test-outputs" + f"/train_{i}"
     run = MPIRun(
         cmd_line=train_cmd,
