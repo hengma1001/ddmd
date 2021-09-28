@@ -1,4 +1,4 @@
-# entk_cvae_md
+# DDMD
 A script that runs Molecular Dynamics simulations under supervision of Machine 
 Learning model on local workstation. 
 
