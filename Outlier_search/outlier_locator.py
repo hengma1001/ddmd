@@ -13,7 +13,11 @@ from utils import find_frame, write_pdb_frame
 from  MDAnalysis.analysis.rms import RMSD
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
-debug = 0
+
+for _ in logging.root.manager.loggerDict:
+        logging.getLogger(_).setLevel(logging.CRITICAL)
+
+debug = 1
 logger_level = logging.DEBUG if debug else logging.INFO
 logging.basicConfig(level=logger_level, format='%(asctime)s %(message)s')
 logger = logging.getLogger(__name__)
@@ -149,7 +153,7 @@ while not os.path.exists("halt"):
             outlier_label = os.path.basename(outlier)
             logger.debug(f'Old outlier {outlier_label} is now connected to \
                 a cluster and removing it from the outlier list ') 
-            # os.rename(outlier, os.path.join(outliers_pdb_path, '-'+outlier_label)) 
+            os.rename(outlier, os.path.join(outliers_pdb_path, '-'+outlier_label)) 
 
 
     # Set up input configurations for next batch of MD simulations 
@@ -160,7 +164,7 @@ while not os.path.exists("halt"):
     # outliers_list = glob(os.path.join(outliers_pdb_path, 'omm_runs*.pdb'))
     restart_pdbs = [outlier for outlier in new_outliers_list \
             if os.path.basename(outlier) not in used_pdbs_labels] 
-    logger.info(f"restart pdbs: len(restart_pdbs) conformers...")
+    logger.info(f"restart pdbs: {len(restart_pdbs)} conformers...")
 
     # rank the restart_pdbs according to their RMSD to local state 
     if ref_pdb_file: 
@@ -179,12 +183,16 @@ while not os.path.exists("halt"):
     # identify currently running MDs 
     running_MDs = [md for md in omm_runs if not os.path.exists(md + '/new_pdb')]
     # decide which MD to stop, (no outliers in past 10ns/50ps = 200 frames) 
-    n_timeout = time_out / timestep 
+    n_timeout = time_out / time_frame 
     for md in running_MDs: 
         md_label = os.path.basename(md)
         md_log = f'{md}/output.log'
         # lines in the md log
-        current_frames = sum(1 for line in open(md_log)) - 1
+        if os.path.exists(md_log): 
+            current_frames = sum(1 for line in open(md_log)) - 1
+        else: 
+            continue 
+        logger.debug(f"Evaluating {md}, with {current_frames} frames") 
         # low bound for minimal MD runs, 2 * timeout 
         if current_frames > n_timeout * 2: 
             current_outliers = glob(outliers_pdb_path + f"{md_label}_*.pdb")
@@ -200,7 +208,7 @@ while not os.path.exists("halt"):
             logger.debug(f"Stopping simulation at {md}, and restarting with {restart_pdb}")
 
     logger.info(f"\n\n\n=======>Iteration {iteration} done<========\n\n")
-    time.sleep(120)
+    time.sleep(30)
     iteration += 1
 
 
