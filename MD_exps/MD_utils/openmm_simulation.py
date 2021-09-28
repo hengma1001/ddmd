@@ -279,6 +279,8 @@ def openmm_simulate_amber_explicit(
 
     if check_point:
         simulation.loadCheckpoint(check_point)
+        chk_copy = os.path.basename(os.path.dirname(check_point))
+        shutil.copy2(check_point, f'{chk_copy}.chk')
 
     if reeval_time: 
         nsteps = int(reeval_time/dt) 
@@ -311,6 +313,7 @@ def openmm_simulate_amber_explicit(
     else: 
         nsteps = int(sim_time/dt)
         simulation.step(nsteps)
+
         if os.path.exists('../halt'): 
             return 
         elif os.path.exists('new_pdb'): 
