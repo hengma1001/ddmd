@@ -44,7 +44,7 @@ simulate(
         output_cm='output_cm.h5',
         report_time=50*u.picoseconds,
         sim_time=float(args.length)*u.nanoseconds, 
-        reeval_time=10*u.nanoseconds
+        # reeval_time=10*u.nanoseconds
         )
 
 
