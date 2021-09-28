@@ -50,10 +50,18 @@ while not os.path.exists(cvae_input):
 
 # create cvae instance
 time.sleep(10)
-cm_h5 = h5py.File(cvae_input, 'r', libver='latest', swmr=True)
+
+while True: 
+    try: 
+        cm_h5 = h5py.File(cvae_input, 'r', libver='latest', swmr=True)
+        break
+    except: 
+        continue
+
 cm_data = cm_h5['contact_maps']
 input_shape = cm_data.shape
 cvae = CVAE(input_shape[1:], hyper_dim)
+cvae.model.summary()
 cm_h5.close()
 
 # training until aborting 

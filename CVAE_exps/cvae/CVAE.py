@@ -1,6 +1,8 @@
 import os, sys, h5py
 import numpy as np 
 from sklearn.model_selection import train_test_split
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from .vae_conv import conv_variational_autoencoder
 
 
@@ -20,7 +22,7 @@ def CVAE(input_shape, latent_dim=3):
     strides = strides[0:conv_layers];
     autoencoder = conv_variational_autoencoder(image_size,channels,conv_layers,feature_maps,
                filter_shapes,strides,dense_layers,dense_neurons,dense_dropouts,latent_dim); 
-    autoencoder.model.summary()
+    # autoencoder.model.summary()
     return autoencoder
 
 
