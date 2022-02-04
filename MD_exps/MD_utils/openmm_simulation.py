@@ -10,7 +10,7 @@ import simtk.openmm.app as app
 import simtk.openmm as omm
 import simtk.unit as u
 
-from MD_utils.openmm_reporter import ContactMapReporter
+from MD_utils.openmm_reporter import ContactMapReporter_dna as ContactMapReporter
 from MD_utils.utils import create_md_path, get_dir_base
 
 
