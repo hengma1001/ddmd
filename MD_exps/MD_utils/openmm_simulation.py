@@ -123,54 +123,76 @@ def openmm_simulate_amber_implicit(
     if check_point:
         simulation.loadCheckpoint(check_point)
 
-    if reeval_time: 
-        nsteps = int(reeval_time/dt) 
-        niter = int(sim_time/reeval_time) 
-        for i in range(niter): 
-            if os.path.exists('../halt'): 
-                return 
-            elif os.path.exists('new_pdb'):
-                print("Found new.pdb, starting new sim...") 
+    nsteps = int(sim_time/dt)
+    simulation.step(nsteps)
 
-                # cleaning up old runs 
-                del simulation
-                # starting new simulation with new pdb
-                with open('new_pdb', 'r') as fp: 
-                    new_pdb = fp.read().split()[0] 
-                os.chdir(work_dir)
-                openmm_simulate_amber_implicit(
-                        new_pdb, top_file=top_file, 
-                        check_point=None, 
-                        GPU_index=GPU_index,
-                        output_traj=output_traj, 
-                        output_log=output_log, 
-                        output_cm=output_cm,
-                        report_time=report_time, 
-                        sim_time=sim_time,
-                        reeval_time=reeval_time, 
-                        )
-            else: 
-                simulation.step(nsteps)
-    else: 
-        nsteps = int(sim_time/dt)
-        simulation.step(nsteps)
+    # if reeval_time: 
+    #     nsteps = int(reeval_time/dt) 
+    #     niter = int(sim_time/reeval_time) 
+    #     for _ in range(niter): 
+    #         if os.path.exists('../../halt'): 
+    #             return 
+    #         elif os.path.exists('new_pdb'):
+    #             print("Found new.pdb, starting new sim...") 
+    #             # cleaning up old runs 
+    #             del simulation
+    #             # starting new simulation with new pdb
+    #             with open('new_pdb', 'r') as fp: 
+    #                 new_pdb = fp.read().split()[0] 
+    #             os.chdir(work_dir)
+    #             # break the loop with new pdb name
+    #             break
+    #         else: 
+    #             simulation.step(nsteps)
 
+    #     # start new run with pdb from outlier detection 
+    #     openmm_simulate_amber_implicit(
+    #         new_pdb, top_file=top_file, 
+    #         check_point=None, 
+    #         GPU_index=GPU_index,
+    #         output_traj=output_traj, 
+    #         output_log=output_log, 
+    #         output_cm=output_cm,
+    #         report_time=report_time, 
+    #         sim_time=sim_time,
+    #         reeval_time=reeval_time, 
+    #         )
+    # else: 
+    #     nsteps = int(sim_time/dt)
+    #     simulation.step(nsteps)
+
+
+    # start new runs after finishing the first round
+    if os.path.exists('../../halt'): 
+        return
+    elif os.path.exists('new_pdb'):
+        print("Found new.pdb, starting new sim...") 
+        # cleaning up old runs 
+        del simulation
+        # starting new simulation with new pdb
+        with open('new_pdb', 'r') as fp: 
+            new_pdb = fp.read().split()[0] 
+        check_point = None
+    else:  
+        new_pdb = pdb_file
+        if os.path.exists('checkpnt.chk'): 
+            # using a checkpoint
+            check_point = os.path.abspath('checkpnt.chk')
+            with open('new_pdb', 'w') as fp: 
+                fp.write(check_point)
+        
     os.chdir(work_dir)
-    if not os.path.exists('../halt'): 
-        openmm_simulate_amber_implicit(
-                pdb_file, top_file=top_file, 
-                check_point=None, 
-                GPU_index=GPU_index,
-                output_traj=output_traj, 
-                output_log=output_log, 
-                output_cm=output_cm,
-                report_time=report_time, 
-                sim_time=sim_time,
-                reeval_time=reeval_time, 
-                )
-    else: 
-        return  
-
+    openmm_simulate_amber_implicit(
+        new_pdb, top_file=top_file, 
+        check_point=check_point, 
+        GPU_index=GPU_index,
+        output_traj=output_traj, 
+        output_log=output_log, 
+        output_cm=output_cm,
+        report_time=report_time, 
+        sim_time=sim_time,
+        reeval_time=reeval_time, 
+        )
 
 def openmm_simulate_amber_explicit(
         pdb_file, 
@@ -285,7 +307,7 @@ def openmm_simulate_amber_explicit(
     if reeval_time: 
         nsteps = int(reeval_time/dt) 
         niter = int(sim_time/reeval_time) 
-        for i in range(niter): 
+        for _ in range(niter): 
             if os.path.exists('../halt'): 
                 return 
             elif os.path.exists('new_pdb'):
@@ -296,66 +318,12 @@ def openmm_simulate_amber_explicit(
                 # starting new simulation with new pdb
                 with open('new_pdb', 'r') as fp: 
                     new_pdb = fp.read().split()[0] 
-                os.chdir(work_dir)
-                openmm_simulate_amber_explicit(
-                        new_pdb, top_file=top_file, 
-                        check_point=None, 
-                        GPU_index=GPU_index,
-                        output_traj=output_traj, 
-                        output_log=output_log, 
-                        output_cm=output_cm,
-                        report_time=report_time, 
-                        sim_time=sim_time,
-                        reeval_time=reeval_time, 
-                        )
             else: 
                 simulation.step(nsteps)
-    else: 
-        nsteps = int(sim_time/dt)
-        simulation.step(nsteps)
 
-        if os.path.exists('../halt'): 
-            return 
-        elif os.path.exists('new_pdb'): 
-            print("Found new.pdb, starting new sim...")
-            del simulation 
-            with open('new_pdb', 'r') as fp:
-                new_pdb = fp.read().split()[0]
-            os.chdir(work_dir) 
-            openmm_simulate_amber_explicit(
-                    new_pdb, top_file=top_file,
-                    check_point=None,
-                    GPU_index=GPU_index,
-                    output_traj=output_traj,
-                    output_log=output_log,
-                    output_cm=output_cm,
-                    report_time=report_time,
-                    sim_time=sim_time,
-                    reeval_time=reeval_time,
-                    )
-        elif os.path.exists('checkpnt.chk'): 
-            print("Continuing simulation with check point...")
-            check_point = os.path.abspath('checkpnt.chk') 
-            with open('new_pdb', 'w') as fp: 
-                fp.write(check_point)
-            os.chdir(work_dir) 
-            openmm_simulate_amber_explicit(
-                    pdb_file, top_file=top_file,
-                    check_point=check_point,
-                    GPU_index=GPU_index,
-                    output_traj=output_traj,
-                    output_log=output_log,
-                    output_cm=output_cm,
-                    report_time=report_time,
-                    sim_time=sim_time,
-                    reeval_time=reeval_time,
-                    )
-
-
-    os.chdir(work_dir)
-    if not os.path.exists('../halt'): 
+        os.chdir(work_dir)
         openmm_simulate_amber_explicit(
-                pdb_file, top_file=top_file, 
+                new_pdb, top_file=top_file, 
                 check_point=None, 
                 GPU_index=GPU_index,
                 output_traj=output_traj, 
@@ -366,4 +334,37 @@ def openmm_simulate_amber_explicit(
                 reeval_time=reeval_time, 
                 )
     else: 
-        return  
+        nsteps = int(sim_time/dt)
+        simulation.step(nsteps)
+
+    # start new runs after finishing the first round
+    if os.path.exists('../../halt'): 
+        return
+    elif os.path.exists('new_pdb'):
+        print("Found new.pdb, starting new sim...") 
+        # cleaning up old runs 
+        del simulation
+        # starting new simulation with new pdb
+        with open('new_pdb', 'r') as fp: 
+            new_pdb = fp.read().split()[0] 
+        check_point = None
+    else:  
+        new_pdb = pdb_file
+        if os.path.exists('checkpnt.chk'): 
+            # using a checkpoint
+            check_point = os.path.abspath('checkpnt.chk')
+            with open('new_pdb', 'w') as fp: 
+                fp.write(check_point)
+        
+    os.chdir(work_dir)
+    openmm_simulate_amber_explicit(
+        new_pdb, top_file=top_file, 
+        check_point=check_point, 
+        GPU_index=GPU_index,
+        output_traj=output_traj, 
+        output_log=output_log, 
+        output_cm=output_cm,
+        report_time=report_time, 
+        sim_time=sim_time,
+        reeval_time=reeval_time, 
+        )
