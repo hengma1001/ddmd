@@ -12,7 +12,7 @@ The workflow requires various packages to perform different tasks, which can be 
 After anaconda/miniconda is installed in your machine, the environment can be built simply by
 
 ```
-conda env create -f ddmd.yml
+conda env create -f envs/ddmd.yml
 ```
 
 ## Run Workflow.
