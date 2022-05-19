@@ -19,9 +19,14 @@ conda env create -f envs/ddmd.yml
 ```
 
 ### Docker
+Docker images are available and can be built with the following command. 
 ```
 docker build -f envs/Dockerfile -t ddmd . 
+docker run -it ddmd bash
 ```
+
+### Singularity 
+To be added. 
 
 ## Run Workflow.
 The workflow contains 3 main components, Molecular Dynamics simulations, machine learning neural network and inference node. This guild will provide instruction to set up your own system. 
