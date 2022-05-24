@@ -26,7 +26,12 @@ docker run -it ddmd bash
 ```
 
 ### Singularity 
-To be added. 
+Singularity image can be built with `envs/ddmd.def`. 
+```
+cd envs
+sudo singularity build ddmd.sif ddmd.def
+```
+
 
 ## Run Workflow.
 The workflow contains 3 main components, Molecular Dynamics simulations, machine learning neural network and inference node. This guild will provide instruction to set up your own system. 
