@@ -124,7 +124,7 @@ for i in range(n_train):
 # jsrun -n 1 -a 1 -g 1 python outlier_locator.py -m ../MD_exps/ -c ../CVAE_exps/ -p ../MD_exps/pdb/fs-peptide.pdb -r ../MD_exps/pdb/fs-peptide.pdb
 gpus = gpu_ids.pop()
 inf_cmd = f"python outlier_locator.py "\
-           "-m {md_path} -c {train_path} "\
+          f"-m {md_path} -c {train_path} "\
           f"-p {pdb_file} -r {ref_pdb} -g {gpus}" 
 output_file = "./test-outputs" + "/inference_output" 
 env_dict={"PYTHONPATH": train_path}
