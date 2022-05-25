@@ -28,8 +28,10 @@ python_exe = f'{conda_path}/bin/python'
 
 # MD setup 
 md_path = os.path.abspath("./MD_exps") 
-pdb_file = md_path + "/pdb/prot.pdb"
-top_file = md_path + "/pdb/prot.prmtop"
+pdb_file = md_path + "/pdb/bba/1FME-unfolded.pdb"
+ref_pdb = md_path + "/pdb/bba/1FME-folded.pdb"
+sim_length = 100
+# top_file = md_path + "/pdb/prot.prmtop"
 
 # collecter setup 
 collect_path = os.path.abspath("./MD_to_CVAE/")
@@ -42,8 +44,8 @@ train_path = os.path.abspath("./CVAE_exps")
 inf_path = os.path.abspath("./Outlier_search") 
 
 # run setup 
-n_sim = 10
-n_train = 2 
+n_sim = 6
+n_train = 1 
 n_gpus = n_sim + n_train + 1 
 logger.info(f"Configuration: {n_sim} MDs, "\
         f"{n_train} training, and 1 inference node. "\
@@ -72,7 +74,7 @@ for i in range(n_sim):
     # pdb_file = input_path + f"/{sys_label}.pdb"
     # top_file = input_path + f"/{sys_label}.top"
     md_cmd = (
-            f"python run_openmm.py -f {pdb_file} -p {top_file} -l 100"
+            f"python run_openmm.py -f {pdb_file} -l {sim_length}"
     )
     output_file = f"./test-outputs/MD_{i}"
 
@@ -123,7 +125,7 @@ for i in range(n_train):
 gpus = gpu_ids.pop()
 inf_cmd = f"python outlier_locator.py "\
           f"-m {md_path} -c {train_path} "\
-          f"-p {pdb_file} -g {gpus}" 
+          f"-p {pdb_file} -r {ref_pdb} -g {gpus}" 
 output_file = "./test-outputs" + "/inference_output" 
 env_dict={"PYTHONPATH": train_path}
 run = MPIRun(

@@ -157,6 +157,7 @@ def openmm_simulate_amber_implicit(
 
     os.chdir(work_dir)
     if not os.path.exists('../halt'): 
+        del simulation
         openmm_simulate_amber_implicit(
                 pdb_file, top_file=top_file, 
                 check_point=None, 
@@ -351,6 +352,7 @@ def openmm_simulate_amber_explicit(
 
     os.chdir(work_dir)
     if not os.path.exists('../halt'): 
+        del simulation
         openmm_simulate_amber_explicit(
                 pdb_file, top_file=top_file, 
                 check_point=None, 
