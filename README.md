@@ -34,8 +34,16 @@ sudo singularity build ddmd.sif ddmd.def
 Note: It would be necessary to specify the `singularity` path if it's not in the root dir. 
 
 
-## Run Workflow.
-The workflow contains 3 main components, Molecular Dynamics simulations, machine learning neural network and inference node. This guild will provide instruction to set up your own system. 
+## Run Workflow
+
+### Simple Run
+The workflow can be simply run with 
+```bash 
+python run_local.py
+```
+### Customized Run
+
+The workflow contains 3 main components, Molecular Dynamics simulations, machine learning neural network and inference node. This guild will provide instructions to set up your own system. 
 
 1. MD simulations (`MD_exps`)
 
