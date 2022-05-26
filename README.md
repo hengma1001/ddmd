@@ -31,6 +31,7 @@ Singularity image can be built with `envs/ddmd.def`.
 cd envs
 sudo singularity build ddmd.sif ddmd.def
 ```
+Note: It would be necessary to specify the `singularity` path if it's not in the root dir. 
 
 
 ## Run Workflow.
