@@ -1,6 +1,6 @@
 
 ARG CUDA=11.1
-FROM nvidia/cuda:${CUDA}-cudnn8-runtime-ubuntu18.04
+FROM nvidia/cuda:${CUDA}-cudnn8-devel-ubuntu18.04
 # FROM directive resets ARGS, so we specify again (the value is retained if
 # previously set).
 ARG CUDA
@@ -16,6 +16,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
       cmake \
       git \
       wget \
+      openmpi-bin openmpi-doc libopenmpi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget -q -P /tmp \
