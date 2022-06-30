@@ -441,7 +441,6 @@ def openmm_simulate_nve_explicit(
                               constraints=app.HBonds)
     dt = 0.002*u.picoseconds
     integrator = omm.VerletIntegrator(dt)
-    system.addForce(omm.MonteCarloBarostat(1*u.bar, 300*u.kelvin))
 
     try:
         platform = omm.Platform_getPlatformByName("CUDA")
