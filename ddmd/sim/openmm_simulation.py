@@ -239,13 +239,3 @@ class Simulate(yml_base):
             self.checkpoint = f"{omm_path}/checkpnt.chk"
         self.ddmd_run()
 
-
-if __name__ == "__main__":
-    pdb_file = os.path.abspath('../../MD_exps/pdb/prot.pdb')
-    top_file = os.path.abspath('../../MD_exps/pdb/prot.prmtop')
-
-    pdb_imp = os.path.abspath('../../MD_exps/pdb/100-fs-peptide-400K.pdb')
-
-    sim = Simulate(pdb_file, top_file=top_file, sim_time=.1)
-    sim_imp = Simulate(pdb_imp, explicit_sol=False, sim_time=.5)
-    sim_imp.ddmd_run()
