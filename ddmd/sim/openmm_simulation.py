@@ -1,8 +1,5 @@
 import os
-import time
 import shutil
-import random
-from urllib.parse import ParseResultBytes
 import numpy as np
 import parmed as pmd
 
@@ -16,9 +13,11 @@ except:
     import openmm.unit as u
 
 from openmm_reporter import ContactMapReporter
+from ddmd.utils import logger
+from ddmd.utils import yml_base, BaseSettings
 from ddmd.utils import create_md_path, get_dir_base
 
-class Simulate(object):
+class Simulate(yml_base):
     """
     Run simulation with OpenMM
 
@@ -99,7 +98,9 @@ class Simulate(object):
             temperature=300., 
             pressure=1.,
             nonbonded_cutoff=1.,
-            init_vel=False):
+            init_vel=False,
+            forcefield='amber99sbildn.xml', 
+            sol_model='amber99_obc.xml'):
 
         # inputs
         self.pdb_file = pdb_file
@@ -122,7 +123,15 @@ class Simulate(object):
         self.nonbonded_cutoff = nonbonded_cutoff * u.nanometers
         self.init_vel = init_vel
 
-        self.base_dir = os.getcwd() 
+        # force field
+        self.forcefield = forcefield
+        self.sol_model = sol_model
+        self.base_dir = os.getcwd()
+
+    def get_setup(self): 
+        return {'pdb_file': self.pdb_file, 
+                'top_file': self.top_file, 
+                'checkpoint': self.checkpoint}
 
     def build_system(self): 
         system_setup = {
@@ -141,7 +150,7 @@ class Simulate(object):
             # for now
             pdb = pmd.load_file(self.pdb_file)
             forcefield = app.ForceField(
-                            'amber14-all.xml', 'implicit/gbn2.xml')
+                           self.forcefield,  self.sol_model)
             system = forcefield.createSystem(pdb.topology, **system_setup)
 
         if self.pressure and self.explicit_sol: 
@@ -189,34 +198,54 @@ class Simulate(object):
                 self.output_log, report_freq, 
                 step=True, time=True, speed=True,
                 potentialEnergy=True, temperature=True, totalEnergy=True))
-        self.simulation.reporters.append(app.CheckpointReporter('checkpnt.chk', report_freq))
+        self.simulation.reporters.append(
+                app.CheckpointReporter('checkpnt.chk', report_freq))
 
-    def run_sim(self): 
+    def run_sim(self, path='./'): 
+        if not os.path.exists(path): 
+            os.makedirs(path)
+
         self.build_simulation() 
-
+        # skip minimization if check point exists
         if self.checkpoint: 
             self.simulation.loadCheckpoint(self.checkpoint)
         else: 
             self.minimizeEnergy()
-
+            
+        os.chdir(path)
         self.add_reporters() 
-        nsteps = int(self.sim_time / self.dt)
+        # clutchy round up method
+        nsteps = int(self.sim_time / self.dt + .5)
+        logger.debug(f"  Running simulation for {nsteps} steps. ")
         self.simulation.step(nsteps)
+        os.chdir(self.base_dir)
 
-    def ddmd_run(self): 
+    def ddmd_run(self, iter=10): 
         """ddmd recursive MD runs"""
-        
-        self.run_sim()
-        
-
-
+        omm_path = create_md_path()
+        logger.debug(f"Starting simulation at {omm_path}")
+        self.dump_yaml(f"{omm_path}/setting.yml")
+        self.run_sim(omm_path)
+        new_pdb = f"{omm_path}/new_pdb"
+        if os.path.exists(new_pdb): 
+            with open(new_pdb, 'r') as fp: 
+                pdb_file = fp.read().split()[0]
+            logger.debug(f"    Found new pdb file, "\
+                        "starting new simulation...")
+            self.pdb_file = pdb_file
+            self.checkpoint = None
+        else: 
+            logger.debug(f"    Continue the simulation elsewhere...")
+            self.checkpoint = f"{omm_path}/checkpnt.chk"
+        self.ddmd_run()
 
 
 if __name__ == "__main__":
-    pdb_file = '../../MD_exps/pdb/prot.pdb'
-    top_file = '../../MD_exps/pdb/prot.prmtop'
+    pdb_file = os.path.abspath('../../MD_exps/pdb/prot.pdb')
+    top_file = os.path.abspath('../../MD_exps/pdb/prot.prmtop')
 
-    pdb_imp = '../../MD_exps/pdb/100-fs-peptide-400K.pdb'
+    pdb_imp = os.path.abspath('../../MD_exps/pdb/100-fs-peptide-400K.pdb')
 
-    sim = Simulate(pdb_file, top_file=top_file)
-    sim_imp = Simulate(pdb_imp, explicit_sol=False)
+    sim = Simulate(pdb_file, top_file=top_file, sim_time=.1)
+    sim_imp = Simulate(pdb_imp, explicit_sol=False, sim_time=.5)
+    sim_imp.ddmd_run()
