@@ -34,6 +34,7 @@ class yml_base(object):
         with open(cfg_path, 'w') as yaml_file:
             yaml.dump(self.get_setup(), yaml_file, default_flow_style=False)
 
+
 def create_md_path(sys_label=None): 
     """
     create MD simulation path based on its label (int), 
@@ -55,9 +56,14 @@ def create_md_path(sys_label=None):
 def get_dir_base(file_path): 
     return os.path.basename(os.path.dirname(file_path))
 
+
 def touch_file(file): 
     """
     create an empty file for bookkeeping sake
     """
     with open(file, 'w'): 
         pass
+
+
+def get_numoflines(file): 
+    return sum(1 for _ in open(file, 'r'))
