@@ -100,8 +100,9 @@ class Simulate(yml_base):
             nonbonded_cutoff=1.,
             init_vel=False,
             forcefield='amber99sbildn.xml', 
-            sol_model='amber99_obc.xml'):
+            sol_model='amber99_obc.xml') -> None:
 
+        super().__init__()
         # inputs
         self.pdb_file = pdb_file
         self.top_file = top_file
