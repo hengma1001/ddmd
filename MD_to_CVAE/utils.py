@@ -49,7 +49,7 @@ def get_cvae_input(cm_list, padding=2):
     for cm_file in cm_list: 
         cm_h5 = h5py.File(cm_file, 'r', libver='latest', swmr=True)
         cm_data = cm_h5['contact_maps']
-        cvae_input = cm_to_cvae(np.array(cm_data), padding=4)
+        cvae_input = cm_to_cvae(np.array(cm_data), padding=padding)
         cm_h5.close()
         cvae_input_all.append(cvae_input)
     cvae_input_all = np.concatenate(cvae_input_all, axis=0)

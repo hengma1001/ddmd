@@ -321,9 +321,11 @@ def openmm_simulate_amber_explicit(
             else: 
                 simulation.step(nsteps)
 
-        os.chdir(work_dir)
-        openmm_simulate_amber_explicit(
-                new_pdb, top_file=top_file, 
+    os.chdir(work_dir)
+    if not os.path.exists('../halt'): 
+        del simulation
+        openmm_simulate_amber_implicit(
+                pdb_file, top_file=top_file, 
                 check_point=None, 
                 GPU_index=GPU_index,
                 output_traj=output_traj, 
@@ -497,7 +499,10 @@ def openmm_simulate_nve_explicit(
             else: 
                 simulation.step(nsteps)
 
-        os.chdir(work_dir)
+
+    os.chdir(work_dir)
+    if not os.path.exists('../halt'): 
+        del simulation
         openmm_simulate_amber_explicit(
                 new_pdb, top_file=top_file, 
                 check_point=None, 
