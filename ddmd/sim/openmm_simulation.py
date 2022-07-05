@@ -12,9 +12,9 @@ except:
     import openmm.app as app
     import openmm.unit as u
 
-from openmm_reporter import ContactMapReporter
+from .openmm_reporter import ContactMapReporter
 from ddmd.utils import logger
-from ddmd.utils import yml_base, BaseSettings
+from ddmd.utils import yml_base
 from ddmd.utils import create_md_path, get_dir_base
 
 class Simulate(yml_base):
@@ -221,8 +221,11 @@ class Simulate(yml_base):
         self.simulation.step(nsteps)
         os.chdir(self.base_dir)
 
-    def ddmd_run(self, iter=10): 
+    def ddmd_run(self, iter=1e6, level=0): 
         """ddmd recursive MD runs"""
+        if iter == 0: 
+            logger.info(f"<< Finished {level} iterations of MD simulations >>")
+            return
         omm_path = create_md_path()
         logger.debug(f"Starting simulation at {omm_path}")
         self.dump_yaml(f"{omm_path}/setting.yml")
@@ -238,5 +241,5 @@ class Simulate(yml_base):
         else: 
             logger.debug(f"    Continue the simulation elsewhere...")
             self.checkpoint = f"{omm_path}/checkpnt.chk"
-        self.ddmd_run()
+        self.ddmd_run(iter=iter-1, level=level+1)
 
