@@ -368,3 +368,172 @@ def openmm_simulate_amber_explicit(
         sim_time=sim_time,
         reeval_time=reeval_time, 
         )
+
+
+def openmm_simulate_nve_explicit(
+        pdb_file, 
+        top_file=None, 
+        check_point=None, 
+        label_system=False,
+        GPU_index=0,
+        output_traj="output.dcd", 
+        output_log="output.log", 
+        output_cm=None,
+        report_time=10*u.picoseconds, 
+        sim_time=10*u.nanoseconds,
+        reeval_time=None, 
+        ):
+    """
+    Start and run an OpenMM NVE simulation with Langevin integrator at 2 fs 
+    time step and 300 K. The cutoff distance for nonbonded interactions were 
+    set at 1.0 nm, which commonly used along with Amber force field. Long-range
+    nonbonded interactions were handled with PME. 
+    Parameters
+    ----------
+    top_file : topology file (.top, .prmtop, ...)
+        This is the topology file discribe all the interactions within the MD 
+        system. 
+    pdb_file : coordinates file (.gro, .pdb, ...)
+        This is the molecule configuration file contains all the atom position
+        and PBC (periodic boundary condition) box in the system. 
+    GPU_index : Int or Str 
+        The device # of GPU to use for running the simulation. Use Strings, '0,1'
+        for example, to use more than 1 GPU
+    output_traj : the trajectory file (.dcd)
+        This is the file stores all the coordinates information of the MD 
+        simulation results. 
+    output_log : the log file (.log) 
+        This file stores the MD simulation status, such as steps, time, potential
+        energy, temperature, speed, etc.
+    report_time : 10 ps
+        The program writes its information to the output every 10 ps by default 
+    sim_time : 10 ns
+        The timespan of the simulation trajectory
+    """
+
+    # set up save dir for simulation results 
+    work_dir = os.getcwd() 
+    time_label = int(time.time())
+    if label_system: 
+        pdb_path = os.path.dirname(pdb_file) 
+        pdb_label = os.path.basename(pdb_path).replace("input_", "")
+        omm_path = create_md_path(time_label, sys_label=pdb_label)
+    else: 
+        omm_path = create_md_path(time_label) 
+    print(f"Running simulation at {omm_path}")
+
+    # setting up running path  
+    os.chdir(omm_path)
+    if check_point: 
+        chp_save = get_dir_base(check_point) + '.chk'
+        shutil.copy(check_point, chp_save)
+
+    top = pmd.load_file(top_file, xyz = pdb_file)
+
+    system = top.createSystem(nonbondedMethod=app.PME, nonbondedCutoff=1*u.nanometer,
+                              constraints=app.HBonds)
+    dt = 0.002*u.picoseconds
+    integrator = omm.VerletIntegrator(dt)
+
+    try:
+        platform = omm.Platform_getPlatformByName("CUDA")
+        properties = {'DeviceIndex': str(GPU_index), 'CudaPrecision': 'mixed'}
+    except Exception:
+        platform = omm.Platform_getPlatformByName("OpenCL")
+        properties = {'DeviceIndex': str(GPU_index)}
+
+    simulation = app.Simulation(top.topology, system, integrator, platform, properties)
+
+    # simulation.context.setPositions(top.positions)
+    if top.get_coordinates().shape[0] == 1: 
+        simulation.context.setPositions(top.positions) 
+        shutil.copy2(pdb_file, './')
+    else: 
+        positions = random.choice(top.get_coordinates())
+        simulation.context.setPositions(positions/10) 
+        #parmed \AA to OpenMM nm
+        top.write_pdb('start.pdb', coordinates=positions) 
+
+    simulation.minimizeEnergy()
+    simulation.context.setVelocitiesToTemperature(300*u.kelvin, random.randint(1, 10000))
+    # simulation.step(int(100*u.picoseconds / (2*u.femtoseconds)))
+
+    report_freq = int(report_time/dt)
+    simulation.reporters.append(app.DCDReporter(output_traj, report_freq))
+    if output_cm:
+        simulation.reporters.append(ContactMapReporter(output_cm, report_freq))
+    simulation.reporters.append(app.StateDataReporter(output_log,
+            report_freq, step=True, time=True, speed=True,
+            potentialEnergy=True, temperature=True, totalEnergy=True))
+    simulation.reporters.append(app.CheckpointReporter('checkpnt.chk', report_freq))
+
+    if check_point:
+        simulation.loadCheckpoint(check_point)
+        chk_copy = os.path.basename(os.path.dirname(check_point))
+        shutil.copy2(check_point, f'{chk_copy}.chk')
+
+    if reeval_time: 
+        nsteps = int(reeval_time/dt) 
+        niter = int(sim_time/reeval_time) 
+        for _ in range(niter): 
+            if os.path.exists('../halt'): 
+                return 
+            elif os.path.exists('new_pdb'):
+                print("Found new.pdb, starting new sim...") 
+
+                # cleaning up old runs 
+                del simulation
+                # starting new simulation with new pdb
+                with open('new_pdb', 'r') as fp: 
+                    new_pdb = fp.read().split()[0] 
+                continue
+            else: 
+                simulation.step(nsteps)
+
+        os.chdir(work_dir)
+        openmm_simulate_amber_explicit(
+                new_pdb, top_file=top_file, 
+                check_point=None, 
+                GPU_index=GPU_index,
+                output_traj=output_traj, 
+                output_log=output_log, 
+                output_cm=output_cm,
+                report_time=report_time, 
+                sim_time=sim_time,
+                reeval_time=reeval_time, 
+                )
+    else: 
+        nsteps = int(sim_time/dt)
+        simulation.step(nsteps)
+
+    # start new runs after finishing the first round
+    if os.path.exists('../../halt'): 
+        return
+    elif os.path.exists('new_pdb'):
+        print("Found new.pdb, starting new sim...") 
+        # cleaning up old runs 
+        del simulation
+        # starting new simulation with new pdb
+        with open('new_pdb', 'r') as fp: 
+            new_pdb = fp.read().split()[0] 
+        check_point = None
+    else:  
+        new_pdb = pdb_file
+        if os.path.exists('checkpnt.chk'): 
+            # using a checkpoint
+            check_point = os.path.abspath('checkpnt.chk')
+            with open('new_pdb', 'w') as fp: 
+                fp.write(check_point)
+        
+    os.chdir(work_dir)
+    openmm_simulate_amber_explicit(
+        new_pdb, top_file=top_file, 
+        check_point=check_point, 
+        GPU_index=GPU_index,
+        output_traj=output_traj, 
+        output_log=output_log, 
+        output_cm=output_cm,
+        report_time=report_time, 
+        sim_time=sim_time,
+        reeval_time=reeval_time, 
+        )
