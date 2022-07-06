@@ -35,22 +35,22 @@ class yml_base(object):
             yaml.dump(self.get_setup(), yaml_file, default_flow_style=False)
 
 
-def create_md_path(sys_label=None): 
+def create_path(sys_label=None, dir_type='md'): 
     """
     create MD simulation path based on its label (int), 
     and automatically update label if path exists. 
     """
     time_label = int(time.time())
     if sys_label: 
-        md_path = f'md_run_{sys_label}_{time_label}'
+        md_path = f'{dir_type}_run_{sys_label}_{time_label}'
     else: 
-         md_path = f'md_run_{time_label}'
+         md_path = f'{dir_type}_run_{time_label}'
 
     try:
         os.mkdir(md_path)
         return md_path
     except: 
-        return create_md_path(sys_label=sys_label)
+        return create_md_path(sys_label=sys_label, dir_type=dir_type)
 
 
 def get_dir_base(file_path): 

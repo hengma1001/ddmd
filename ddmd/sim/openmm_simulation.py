@@ -12,10 +12,10 @@ except:
     import openmm.app as app
     import openmm.unit as u
 
-from .openmm_reporter import ContactMapReporter
+# from .openmm_reporter import ContactMapReporter
 from ddmd.utils import logger
 from ddmd.utils import yml_base
-from ddmd.utils import create_md_path, get_dir_base
+from ddmd.utils import create_path, get_dir_base
 
 class Simulate(yml_base):
     """
@@ -89,10 +89,9 @@ class Simulate(yml_base):
             gpu_id=0,
             output_traj="output.dcd",
             output_log="output.log", 
-            output_cm=None,
+            # output_cm=None,
             report_time=10, 
             sim_time=10,
-            # reeval_time=0, 
             dt=2.,
             explicit_sol=True,
             temperature=300., 
@@ -112,10 +111,9 @@ class Simulate(yml_base):
         # outputs
         self.output_traj = output_traj
         self.output_log = output_log
-        self.output_cm = output_cm
+        # self.output_cm = output_cm
         self.report_time = report_time * u.picoseconds
         self.sim_time = sim_time * u.nanoseconds
-        # self.reeval_time = reeval_time
         # sim setup 
         self.dt = dt * u.femtoseconds
         self.explicit_sol = explicit_sol
@@ -192,9 +190,9 @@ class Simulate(yml_base):
         report_freq = int(self.report_time / self.dt)
         self.simulation.reporters.append(
                     app.DCDReporter(self.output_traj, report_freq))
-        if self.output_cm:
-            self.simulation.reporters.append(
-                    ContactMapReporter(self.output_cm, report_freq))
+        # if self.output_cm:
+        #     self.simulation.reporters.append(
+        #             ContactMapReporter(self.output_cm, report_freq))
         self.simulation.reporters.append(app.StateDataReporter(
                 self.output_log, report_freq, 
                 step=True, time=True, speed=True,
@@ -226,7 +224,7 @@ class Simulate(yml_base):
         if iter == 0: 
             logger.info(f"<< Finished {level} iterations of MD simulations >>")
             return
-        omm_path = create_md_path()
+        omm_path = create_path()
         logger.debug(f"Starting simulation at {omm_path}")
         self.dump_yaml(f"{omm_path}/setting.yml")
         self.run_sim(omm_path)
