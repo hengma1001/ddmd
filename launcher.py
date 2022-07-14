@@ -1,6 +1,7 @@
 from itertools import combinations
 from typing import List, Dict, Tuple, Set
 import os
+import signal
 import getpass
 import GPUtil
 import subprocess
@@ -87,7 +88,8 @@ class MPIRun:
             executable="/bin/bash",
             cwd=cwd,
             stdout=self.outfile,
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT,
+            preexec_fn=os.setsid
         )
 
     def poll(self):
@@ -97,7 +99,8 @@ class MPIRun:
         return retcode
 
     def kill(self): 
-        self.process.kill()
+        os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+        # self.process.kill()
 
 if __name__ == "__main__":
     gpu_manager = GPUManager()
