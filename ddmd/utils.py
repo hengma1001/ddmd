@@ -1,3 +1,4 @@
+import inspect
 import os 
 import time
 import yaml
@@ -50,7 +51,7 @@ def create_path(sys_label=None, dir_type='md'):
         os.mkdir(md_path)
         return md_path
     except: 
-        return create_md_path(sys_label=sys_label, dir_type=dir_type)
+        return create_path(sys_label=sys_label, dir_type=dir_type)
 
 
 def get_dir_base(file_path): 
@@ -67,3 +68,8 @@ def touch_file(file):
 
 def get_numoflines(file): 
     return sum(1 for _ in open(file, 'r'))
+
+
+def get_function_kwargs(func): 
+    sig = inspect.signature(func)
+    return [i for i in sig.parameters]
