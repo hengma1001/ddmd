@@ -1,13 +1,12 @@
+import json
 import os
 import glob
-from typing import Tuple
-import h5py
+import json
 import numpy as np 
-import tensorflow as tf
 import MDAnalysis as mda
 
 from operator import mul
-from functools import reduce bvc  
+from functools import reduce  
 from MDAnalysis.analysis import distances
 from sklearn.model_selection import train_test_split
 
@@ -17,10 +16,10 @@ from .model_tf2 import CVAE
 from ddmd.utils import logger
 from ddmd.utils import get_numoflines
 from ddmd.utils import yml_base, BaseSettings
-from ddmd.utils import create_path, get_dir_base
+from ddmd.utils import create_path, get_function_kwargs
 
 
-class ml_runs(yml_base): 
+class ml_base(yml_base): 
     """
     Run ML training 
 
@@ -39,12 +38,10 @@ class ml_runs(yml_base):
     def __init__(self, 
         pdb_file, 
         md_path,
-        n_train_start=50, 
         ) -> None:
         super().__init__()
         self.pdb_file = pdb_file
         self.md_path = md_path
-        self.n_train_start = n_train_start
 
     def get_numberofFrames(self): 
         '''
@@ -55,30 +52,34 @@ class ml_runs(yml_base):
         return sum(get_numoflines(log)-1 for log in log_files)
 
     def get_contact_maps(self, 
-            atom_sel='name CA', 
-            cutoff=8, 
+            atom_sel:str='name CA', 
+            cutoff:float=8., 
             ): 
         dcd_files = sorted(glob.glob(f"{self.md_path}/md_run_*/*.dcd"))
-        mda_u = mda.Universe(self.pdb_file, dcd_files)
-        ca = mda_u.select_atoms(atom_sel)
-        
         cm_list = []
-        for _ in mda_u.trajectory: 
-            cm = (distances.self_distance_array(ca.positions) < cutoff) * 1.0
-            cm_list.append(cm)
+        for dcd in dcd_files: 
+            try: 
+                mda_u = mda.Universe(self.pdb_file, dcd)
+            except: 
+                logger.debug(f"Skipping {dcd}...")
+                continue
+
+            ca = mda_u.select_atoms(atom_sel)
+            for _ in mda_u.trajectory: 
+                cm = (distances.self_distance_array(ca.positions) < cutoff) * 1.0
+                cm_list.append(cm)
 
         return np.array(cm_list)
 
-    def get_train_data(self, strides): 
-        contact_maps = self.get_contact_maps()
+    def get_vae_input(self, strides, **kwargs): 
+        contact_maps = self.get_contact_maps(**kwargs)
         padding = reduce(mul, [i[0] for i in strides])
         padding = max(2, padding)
         logger.debug(f"  Padding {padding} on the contact maps...")
         cvae_input = cm_to_cvae(contact_maps, padding=padding)
         logger.debug(f"cvae input shape: {cvae_input.shape}")
-        train_data, val_data = data_split(cvae_input)
 
-        return train_data, val_data   
+        return cvae_input   
 
     def build_vae(self, 
             latent_dim=3, 
@@ -86,15 +87,19 @@ class ml_runs(yml_base):
             feature_maps=[16, 16, 16, 16], 
             filter_shapes=[(3, 3), (3, 3), (3, 3), (3, 3)], 
             strides=[(1, 1), (1, 1), (1, 1), (1, 1)], 
-            dense_layers=1, 
-            dense_neurons=[128], 
-            dense_dropouts=[0], 
+            dense_layers=1,
+            dense_neurons=[128],
+            dense_dropouts=[0],
             **kwargs
             ):
-        train_data, val_data = self.get_train_data(strides)
-
-        image_size = train_data.shape[1:-1]
-        channel = train_data.shape[-1]
+        input_kwargs = {}
+        input_cm_keys = get_function_kwargs(self.get_contact_maps)
+        for key in input_cm_keys: 
+            if key in kwargs: 
+                input_kwargs[key] = kwargs.pop(key)
+        cvae_input = self.get_vae_input(strides, **input_kwargs)
+        image_size = cvae_input.shape[1:-1]
+        channel = cvae_input.shape[-1]
         cvae = CVAE(
                 image_size, channel, 
                 n_conv_layers, feature_maps,
@@ -102,17 +107,23 @@ class ml_runs(yml_base):
                 dense_layers, dense_neurons,
                 dense_dropouts, latent_dim, 
                 **kwargs)
-        return cvae, train_data, val_data
+        return cvae, cvae_input
 
     def train_cvae(self, 
-            batch_size=256, 
+            batch_size=256,
             epochs=100,
             **kwargs): 
-
-        cvae, train_data, val_data = self.build_vae(**kwargs)
+        cvae, cvae_input = self.build_vae(**kwargs)
+        train_data, val_data = data_split(cvae_input)
         cvae.train(train_data, batch_size, epochs=epochs, 
                     validation_data=val_data)
-        return cvae
+        return cvae, kwargs
+
+
+class ml_run(ml_base): 
+    def __init__(self, pdb_file, md_path, n_train_start=50) -> None:
+        super().__init__(pdb_file, md_path)
+        self.n_train_start = n_train_start
 
     def ddmd_run(self, retrain_freq=1.5, **kwargs): 
         retrain_lvl = 0
@@ -128,10 +139,12 @@ class ml_runs(yml_base):
                 retrain_lvl += 1
                 logger.debug(f"Starting training with {n_frames} frames...")
             
-            cvae = self.train_cvae(**kwargs)
+            cvae, cvae_setup = self.train_cvae(**kwargs)
             save_path = create_path(sys_label=f'retrain_{retrain_lvl}', 
                                 dir_type='vae')
             cvae.save(f"{save_path}/cvae_weight.h5")
+            with open(f"{save_path}/cvae.json", 'w') as json_file:
+                json.dump(cvae_setup, json_file)
 
 
 def cm_to_cvae(cm_data, padding=2): 
