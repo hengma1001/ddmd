@@ -13,7 +13,7 @@ except:
     import openmm.unit as u
 
 # from .openmm_reporter import ContactMapReporter
-from ddmd.utils import logger
+from ddmd.utils import logger, touch_file
 from ddmd.utils import yml_base
 from ddmd.utils import create_path, get_dir_base
 
@@ -217,6 +217,7 @@ class Simulate(yml_base):
         nsteps = int(self.sim_time / self.dt + .5)
         logger.debug(f"  Running simulation for {nsteps} steps. ")
         self.simulation.step(nsteps)
+        touch_file('DONE')
         os.chdir(self.base_dir)
 
     def ddmd_run(self, iter=1e6, level=0): 
@@ -228,6 +229,7 @@ class Simulate(yml_base):
         logger.debug(f"Starting simulation at {omm_path}")
         self.dump_yaml(f"{omm_path}/setting.yml")
         self.run_sim(omm_path)
+        # touch done
         new_pdb = f"{omm_path}/new_pdb"
         if os.path.exists(new_pdb): 
             with open(new_pdb, 'r') as fp: 
