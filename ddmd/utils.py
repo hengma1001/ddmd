@@ -12,10 +12,12 @@ from pydantic import BaseSettings as _BaseSettings
 PathLike = Union[str, Path]
 _T = TypeVar("_T")
 
-debug = 1
-logger_level = logging.DEBUG if debug else logging.INFO
-logging.basicConfig(level=logger_level, format='%(asctime)s %(message)s')
-logger = logging.getLogger(__name__)
+
+def get_logger(debug=1):
+    logger_level = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(level=logger_level, format='%(asctime)s %(message)s')
+    logger = logging.getLogger(__name__)
+    return logger
 
 
 class BaseSettings(_BaseSettings):
@@ -73,3 +75,7 @@ def get_numoflines(file):
 def get_function_kwargs(func): 
     sig = inspect.signature(func)
     return [i for i in sig.parameters]
+
+
+def dir_basename(path:str) -> str: 
+    return os.path.basename(os.path.dirname(path))
