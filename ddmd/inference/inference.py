@@ -5,10 +5,14 @@ from typing import List
 import numpy as np
 import pandas as pd
 import MDAnalysis as mda
+
+from MDAnalysis.analysis import rms
 from sklearn.neighbors import LocalOutlierFactor 
 
 from ddmd.ml import ml_base
-from ddmd.utils import logger, yml_base
+from ddmd.utils import build_logger, get_numoflines, get_dir_base
+
+logger = build_logger(debug=1)
 
 class inference_run(ml_base): 
     """
@@ -50,12 +54,16 @@ class inference_run(ml_base):
         else: 
             raise("Form not defined, using all, done or running ...")
 
-    def build_md_df(self, ref_pdb=None, **kwargs): 
+    def build_md_df(self, ref_pdb=None, atom_sel="name CA", **kwargs): 
         dcd_files = self.get_md_runs(form='all')
         df_entry = []
+        if ref_pdb: 
+            ref_u = mda.Universe(ref_pdb)
+            sel_ref = ref_u.select_atoms(atom_sel)
         for dcd in dcd_files: 
             try: 
                 mda_u = mda.Universe(self.pdb_file, dcd)
+                sel_atoms = mda_u.select_atoms(atom_sel)
             except: 
                 logger.debug(f"Skipping {dcd}...")
                 continue
@@ -64,9 +72,14 @@ class inference_run(ml_base):
                 local_entry = {'pdb': self.pdb_file, 
                             'dcd': dcd, 
                             'frame': ts.frame}
+                if ref_pdb: 
+                    rmsd = rms.rmsd(
+                            sel_atoms.positions, sel_ref.positions, 
+                            superposition=True)
+                    local_entry['rmsd'] = rmsd
+                # possible new analysis
                 df_entry.append(local_entry)
-        if ref_pdb: 
-            pass
+        
         df = pd.DataFrame(df_entry)
         embeddings = self.get_embeddings()
         df['embeddings'] = embeddings.tolist()
@@ -94,15 +107,42 @@ class inference_run(ml_base):
         embeddings = self.vae.return_embeddings(cvae_input)
         return embeddings
 
-    def ddmd_run(self, n_outlier=50, **kwargs): 
+    def ddmd_run(self, n_outlier=50, md_threshold=0.75, **kwargs): 
         iteration = 0
         while True: 
             trained_models = self.get_trained_models() 
             if trained_models == []: 
-                continue 
+                continue
+            md_done = self.get_md_runs(form='done')
+            if md_done == []: 
+                continue
+            else: 
+                len_md_done = \
+                    get_numoflines(md_done[0].replace('dcd', 'log')) - 1
+            # build the dataframe and rank outliers 
             df = self.build_md_df(**kwargs)
-            # df = df.sort_values('lof_score').head(n_outlier)
+            df_outliers = df.sort_values('lof_score').head(n_outlier)
+            if 'ref_pdb' in kwargs: 
+                df_outliers = df_outliers.sort_values('rmsd')
+            # assess simulations 
+            sim_running = self.get_md_runs(form='running')
+            sim_to_stop = [i for i in sim_running \
+                    if i not in set(df_outliers['dcd'].to_list())]
+            # only stop simulations that have been running for a while
+            # 3/4 done
+            sim_to_stop = [i for i in sim_to_stop \
+                    if get_numoflines(i.replace('dcd', 'log')) \
+                    > len_md_done * md_threshold]
+            for i, sim in enumerate(sim_to_stop): 
+                sim_path = os.path.dirname(sim)
+                outlier = df_outliers.iloc[i]
+                outlier.to_json(f"{sim_path}/new_pdb")
+                logger.debug(f"Writing new pdb from frame "\
+                    f"{outlier['frame']} of {get_dir_base(outlier['dcd'])} "\
+                    f"to {get_dir_base(sim)}")
 
+            logger.info(f"\n=======> Done iteration {iteration} <========\n")
+            iteration += 1
         
 
 def lof_score_from_embeddings(

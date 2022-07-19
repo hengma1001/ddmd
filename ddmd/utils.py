@@ -13,7 +13,7 @@ PathLike = Union[str, Path]
 _T = TypeVar("_T")
 
 
-def get_logger(debug=1):
+def build_logger(debug=0):
     logger_level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(level=logger_level, format='%(asctime)s %(message)s')
     logger = logging.getLogger(__name__)
@@ -75,7 +75,3 @@ def get_numoflines(file):
 def get_function_kwargs(func): 
     sig = inspect.signature(func)
     return [i for i in sig.parameters]
-
-
-def dir_basename(path:str) -> str: 
-    return os.path.basename(os.path.dirname(path))

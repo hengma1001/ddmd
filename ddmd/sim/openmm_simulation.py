@@ -1,3 +1,4 @@
+from distutils.log import debug
 import os
 import shutil
 import numpy as np
@@ -13,9 +14,12 @@ except:
     import openmm.unit as u
 
 # from .openmm_reporter import ContactMapReporter
-from ddmd.utils import logger, touch_file
+from ddmd.utils import build_logger, touch_file
 from ddmd.utils import yml_base
 from ddmd.utils import create_path, get_dir_base
+
+logger = build_logger(debug=1)
+
 
 class Simulate(yml_base):
     """

@@ -13,11 +13,12 @@ from sklearn.model_selection import train_test_split
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from .model_tf2 import CVAE
-from ddmd.utils import logger
+from ddmd.utils import build_logger
 from ddmd.utils import get_numoflines
 from ddmd.utils import yml_base, BaseSettings
 from ddmd.utils import create_path, get_function_kwargs
 
+logger = build_logger(debug=1)
 
 class ml_base(yml_base): 
     """
