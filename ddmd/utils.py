@@ -14,6 +14,8 @@ _T = TypeVar("_T")
 
 
 def build_logger(debug=0):
+    for _ in logging.root.manager.loggerDict:
+        logging.getLogger(_).setLevel(logging.CRITICAL)
     logger_level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(level=logger_level, format='%(asctime)s %(message)s')
     logger = logging.getLogger(__name__)
