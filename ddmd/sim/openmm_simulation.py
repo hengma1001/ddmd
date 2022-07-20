@@ -1,7 +1,4 @@
-from distutils.log import debug
 import os
-import shutil
-import numpy as np
 import parmed as pmd
 
 try:
@@ -19,7 +16,6 @@ from ddmd.utils import yml_base
 from ddmd.utils import create_path, get_dir_base
 
 logger = build_logger(debug=1)
-
 
 class Simulate(yml_base):
     """
