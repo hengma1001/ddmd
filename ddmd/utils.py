@@ -4,34 +4,33 @@ import time
 import yaml
 import json
 import logging
+import MDAnalysis as mda
 from typing import Union
 from pathlib import Path
 from typing import Type, TypeVar
-from pydantic import BaseSettings as _BaseSettings
+# from pydantic import BaseSettings as _BaseSettings
 
 PathLike = Union[str, Path]
 _T = TypeVar("_T")
 
 
 def build_logger(debug=0):
-    for _ in logging.root.manager.loggerDict:
-        logging.getLogger(_).setLevel(logging.CRITICAL)
     logger_level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(level=logger_level, format='%(asctime)s %(message)s')
     logger = logging.getLogger(__name__)
     return logger
 
 
-class BaseSettings(_BaseSettings):
-    def dump_yaml(self, cfg_path: PathLike) -> None:
-        with open(cfg_path, mode="w") as fp:
-            yaml.dump(json.loads(self.json()), fp, indent=4, sort_keys=False)
+# class BaseSettings(_BaseSettings):
+#     def dump_yaml(self, cfg_path: PathLike) -> None:
+#         with open(cfg_path, mode="w") as fp:
+#             yaml.dump(json.loads(self.json()), fp, indent=4, sort_keys=False)
 
-    @classmethod
-    def from_yaml(cls: Type[_T], filename: PathLike) -> _T:
-        with open(filename) as fp:
-            raw_data = yaml.safe_load(fp)
-        return cls(**raw_data)  # type: ignore[call-arg]
+#     @classmethod
+#     def from_yaml(cls: Type[_T], filename: PathLike) -> _T:
+#         with open(filename) as fp:
+#             raw_data = yaml.safe_load(fp)
+#         return cls(**raw_data)  # type: ignore[call-arg]
 
 
 class yml_base(object): 
@@ -77,3 +76,13 @@ def get_numoflines(file):
 def get_function_kwargs(func): 
     sig = inspect.signature(func)
     return [i for i in sig.parameters]
+
+
+def write_pdb_frame(pdb, dcd, frame, save_path=None): 
+    mda_u = mda.Universe(pdb, dcd)
+    mda_u.trajectory[frame]
+    pdb_save_name = f"{get_dir_base(dcd)}_{frame:06}.pdb"
+    if save_path: 
+        pdb_save_name = f"{save_path}/{pdb_save_name}"
+    mda_u.atoms.write(pdb_save_name)
+    return os.path.abspath(pdb_save_name)
