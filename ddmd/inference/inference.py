@@ -1,6 +1,7 @@
 import os
 import glob
 import json
+import time
 from typing import List
 import numpy as np
 import pandas as pd
@@ -10,9 +11,9 @@ from MDAnalysis.analysis import rms
 from sklearn.neighbors import LocalOutlierFactor 
 
 from ddmd.ml import ml_base
-from ddmd.utils import build_logger, get_numoflines, get_dir_base
+from ddmd.utils import build_logger, create_path, get_numoflines, get_dir_base
 
-logger = build_logger(debug=1)
+logger = build_logger()
 
 class inference_run(ml_base): 
     """
@@ -39,6 +40,7 @@ class inference_run(ml_base):
         super().__init__(pdb_file, md_path)
         self.ml_path = ml_path
         self.vae = None
+        self.outlier_path = create_path(dir_type='inference')
 
     def get_trained_models(self): 
         return sorted(glob.glob(f"{self.ml_path}/vae_run_*/*h5"))
@@ -65,7 +67,7 @@ class inference_run(ml_base):
                 mda_u = mda.Universe(self.pdb_file, dcd)
                 sel_atoms = mda_u.select_atoms(atom_sel)
             except: 
-                logger.debug(f"Skipping {dcd}...")
+                logger.info(f"Skipping {dcd}...")
                 continue
 
             for ts in mda_u.trajectory: 
@@ -137,11 +139,13 @@ class inference_run(ml_base):
                 sim_path = os.path.dirname(sim)
                 outlier = df_outliers.iloc[i]
                 outlier.to_json(f"{sim_path}/new_pdb")
-                logger.debug(f"Writing new pdb from frame "\
+                logger.info(f"Writing new pdb from frame "\
                     f"{outlier['frame']} of {get_dir_base(outlier['dcd'])} "\
                     f"to {get_dir_base(sim)}")
+                # write_pdb_frame(, dcd, frame, save_path=None)
 
             logger.info(f"\n=======> Done iteration {iteration} <========\n")
+            time.sleep(1)
             iteration += 1
         
 
@@ -153,8 +157,4 @@ def lof_score_from_embeddings(
     return clf.negative_outlier_factor_
 
 
-if __name__ == "__main__": 
-    pdb_file = '/lambda_stor/homes/heng.ma/Research/ddmd/ddmd/data/pdbs/bba/1FME-unfolded.pdb'
-    md_path = '../../examples'
-    vae_path = '../../examples'
-    runs = inference_run(pdb_file, md_path, vae_path)
+
