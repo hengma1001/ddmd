@@ -15,10 +15,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from .model_tf2 import CVAE
 from ddmd.utils import build_logger
 from ddmd.utils import get_numoflines
-from ddmd.utils import yml_base, BaseSettings
+from ddmd.utils import yml_base
 from ddmd.utils import create_path, get_function_kwargs
 
-logger = build_logger(debug=1)
+logger = build_logger()
 
 class ml_base(yml_base): 
     """
@@ -138,7 +138,7 @@ class ml_run(ml_base):
             else: 
                 self.n_train_start = n_frames * retrain_freq
                 retrain_lvl += 1
-                logger.debug(f"Starting training with {n_frames} frames...")
+                logger.info(f"Starting training with {n_frames} frames...")
             
             cvae, cvae_setup = self.train_cvae(**kwargs)
             save_path = create_path(sys_label=f'retrain_{retrain_lvl}', 
@@ -146,6 +146,8 @@ class ml_run(ml_base):
             cvae.save(f"{save_path}/cvae_weight.h5")
             with open(f"{save_path}/cvae.json", 'w') as json_file:
                 json.dump(cvae_setup, json_file)
+            logger.info(f"  Finished training, next training will "\
+                    f"start with {self.n_train_start} frames...")
 
 
 def cm_to_cvae(cm_data, padding=2): 
