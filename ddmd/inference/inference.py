@@ -72,7 +72,7 @@ class inference_run(ml_base):
 
             for ts in mda_u.trajectory: 
                 local_entry = {'pdb': self.pdb_file, 
-                            'dcd': dcd, 
+                            'dcd': os.path.abspath(dcd), 
                             'frame': ts.frame}
                 if ref_pdb: 
                     rmsd = rms.rmsd(

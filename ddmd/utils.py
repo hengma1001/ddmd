@@ -78,7 +78,7 @@ def get_function_kwargs(func):
     return [i for i in sig.parameters]
 
 
-def write_pdb_frame(pdb, dcd, frame, save_path=None): 
+def write_pdb_frame(pdb, dcd, frame:int, save_path=None): 
     mda_u = mda.Universe(pdb, dcd)
     mda_u.trajectory[frame]
     pdb_save_name = f"{get_dir_base(dcd)}_{frame:06}.pdb"

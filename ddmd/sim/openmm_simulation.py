@@ -1,4 +1,5 @@
 import os
+import json
 import parmed as pmd
 
 try:
@@ -11,11 +12,11 @@ except:
     import openmm.unit as u
 
 # from .openmm_reporter import ContactMapReporter
-from ddmd.utils import build_logger, touch_file
+from ddmd.utils import build_logger, touch_file, write_pdb_frame
 from ddmd.utils import yml_base
 from ddmd.utils import create_path, get_dir_base
 
-logger = build_logger(debug=1)
+logger = build_logger()
 
 class Simulate(yml_base):
     """
@@ -215,7 +216,7 @@ class Simulate(yml_base):
         self.add_reporters() 
         # clutchy round up method
         nsteps = int(self.sim_time / self.dt + .5)
-        logger.debug(f"  Running simulation for {nsteps} steps. ")
+        logger.info(f"  Running simulation for {nsteps} steps. ")
         self.simulation.step(nsteps)
         touch_file('DONE')
         os.chdir(self.base_dir)
@@ -226,20 +227,22 @@ class Simulate(yml_base):
             logger.info(f"<< Finished {level} iterations of MD simulations >>")
             return
         omm_path = create_path()
-        logger.debug(f"Starting simulation at {omm_path}")
+        logger.info(f"Starting simulation at {omm_path}")
         self.dump_yaml(f"{omm_path}/setting.yml")
         self.run_sim(omm_path)
         # touch done
         new_pdb = f"{omm_path}/new_pdb"
         if os.path.exists(new_pdb): 
-            with open(new_pdb, 'r') as fp: 
-                pdb_file = fp.read().split()[0]
-            logger.debug(f"    Found new pdb file, "\
+            pdb_info = json.load(open(new_pdb, 'r'))
+            pdb_file = write_pdb_frame(
+                    pdb_info['pdb'], pdb_info['dcd'], 
+                    pdb_info['frame'], save_path=omm_path)
+            logger.info(f"    Found new pdb file, "\
                         "starting new simulation...")
             self.pdb_file = pdb_file
             self.checkpoint = None
         else: 
-            logger.debug(f"    Continue the simulation elsewhere...")
-            self.checkpoint = f"{omm_path}/checkpnt.chk"
+            logger.info(f"    Continue the simulation elsewhere...")
+            self.checkpoint = os.path.abspath(f"{omm_path}/checkpnt.chk")
         self.ddmd_run(iter=iter-1, level=level+1)
 

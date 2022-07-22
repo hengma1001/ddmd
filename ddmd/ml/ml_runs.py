@@ -41,7 +41,7 @@ class ml_base(yml_base):
         md_path,
         ) -> None:
         super().__init__()
-        self.pdb_file = pdb_file
+        self.pdb_file = os.path.abspath(pdb_file)
         self.md_path = md_path
 
     def get_numberofFrames(self): 
