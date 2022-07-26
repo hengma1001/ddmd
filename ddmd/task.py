@@ -2,7 +2,6 @@ import os
 import signal
 import GPUtil
 import subprocess
-import tempfile
 import logging
 from typing import List, Dict, Tuple, Set
 
@@ -28,16 +27,15 @@ class GPUManager:
         return request_gpus
 
 
-class MPIRunTemplate:
+class RunTemplate:
     @staticmethod
     def _env_str(envs):
-        envstrs = (f'-x {var}="{val}"' for var, val in envs.items())
+        envstrs = (f'export {var}="{val}" && ' for var, val in envs.items())
         return " ".join(envstrs)
 
     @staticmethod
     def render(
         command_line: str,
-        num_ranks: int,
         gpu_ids=None,
         envs_dict=None,
     ):
@@ -46,25 +44,17 @@ class MPIRunTemplate:
             envs_dict = {}
         if gpu_ids:
             envs_dict["CUDA_VISIBLE_DEVICES"] = ",".join(str(id) for id in gpu_ids)
-        envs = MPIRunTemplate._env_str(envs_dict)
+        envs = RunTemplate._env_str(envs_dict)
 
-        return (
-            f"mpirun -n {num_ranks} "
-            f"{envs} {command_line}"
-        )
+        return f"{envs} {command_line}"
 
 
-class MPIRun:
-    ENVIRON_SETUP = []
-
-    @staticmethod
-    def set_preamble_commands(*cmds):
-        MPIRun.ENVIRON_SETUP = list(cmds)
+class Run:
 
     def __init__(
         self,
         cmd_line: str,
-        num_ranks: int,
+        # num_ranks: int,
         output_file,
         gpu_ids=None,
         cwd=None,
@@ -73,19 +63,16 @@ class MPIRun:
         self.gpu_ids = gpu_ids
         self.outfile = open(output_file, 'wb') if isinstance(output_file, str) else output_file
 
-        mpi_command = MPIRunTemplate.render(
+        command = RunTemplate.render(
             command_line=cmd_line,
-            num_ranks=num_ranks,
             gpu_ids=gpu_ids,
             envs_dict=envs_dict,
         )
 
-        args = ' && '.join(MPIRun.ENVIRON_SETUP + [mpi_command])
-        logger.info(f"Popen: {args}")
+        logger.info(f"Popen: {command}")
         self.process = subprocess.Popen(
-            args=args,
+            command,
             shell=True,
-            executable="/bin/bash",
             cwd=cwd,
             stdout=self.outfile,
             stderr=subprocess.STDOUT
