@@ -1,1 +1,1 @@
-ps -ef | grep openmm | awk '{print $2}' | xargs kill -9
+ps -ef | grep ddmd | awk '{print $2}' | xargs kill -9
