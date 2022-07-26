@@ -143,8 +143,11 @@ class inference_run(ml_base):
                     > len_md_done * md_threshold]
             for i, sim in enumerate(sim_to_stop): 
                 sim_path = os.path.dirname(sim)
+                restart_frame = f"{sim_path}/new_pdb"
+                if os.path.exists(restart_frame): 
+                    continue
                 outlier = df_outliers.iloc[i]
-                outlier.to_json(f"{sim_path}/new_pdb")
+                outlier.to_json(restart_frame)
                 logger.info(f"Writing new pdb from frame "\
                     f"{outlier['frame']} of {get_dir_base(outlier['dcd'])} "\
                     f"to {get_dir_base(sim)}")
