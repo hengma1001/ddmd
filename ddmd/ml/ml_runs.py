@@ -123,7 +123,7 @@ class ml_base(yml_base):
 
 
 class ml_run(ml_base): 
-    def __init__(self, pdb_file, md_path, n_train_start=50) -> None:
+    def __init__(self, pdb_file, md_path, n_train_start=1000) -> None:
         super().__init__(pdb_file, md_path)
         self.n_train_start = n_train_start
 
