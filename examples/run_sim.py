@@ -1,9 +1,11 @@
-import os
-import time
 from ddmd.sim import omm_sim
+from ddmd.utils import dict_from_yaml, parse_args
 
 
-pdb_file = os.path.abspath('../data/pdbs/bba/1FME-unfolded.pdb')
+args = parse_args()
+sim_setup = dict_from_yaml(args.config)
+# set max iter to 1B if unspecified
+max_iter = sim_setup.pop('max_iter') if 'max_iter' in sim_setup else 1e9
 
-sim_imp = omm_sim(pdb_file, sim_time=10, explicit_sol=False)
-sim_imp.ddmd_run(iter=3)
+sim_imp = omm_sim(**sim_setup)
+sim_imp.ddmd_run(iter=max_iter)
