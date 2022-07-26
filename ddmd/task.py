@@ -1,30 +1,31 @@
-from itertools import combinations
-from typing import List, Dict, Tuple, Set
 import os
-import getpass
+import signal
 import GPUtil
 import subprocess
 import tempfile
 import logging
+from typing import List, Dict, Tuple, Set
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 logger = logging.getLogger(__name__)
 
 
-class InsufficientResources(Exception): pass
-
+class InsufficientResources(BaseException): 
+    pass
 
 class GPUManager:
-    def __init__(self, maxLoad=.1, maxMemory=.1):
+    def __init__(self, maxLoad=.2, maxMemory=.2):
         self.maxLoad = maxLoad
         self.maxMemory = maxMemory
+        self.gpus = GPUtil.getGPUs()
 
     def request(self, num_gpus:int) -> Set[int]:
-        gpu_ids = GPUtil.getAvailable(
-                limit=num_gpus, 
-                maxLoad = self.maxLoad, 
-                maxMemory = self.maxMemory)
-        return gpu_ids
+        try: 
+            request_gpus = GPUtil.getAvailable(self.gpus, limit=num_gpus,
+                    maxLoad=self.maxLoad, maxMemory=self.maxMemory)
+        except IndexError: 
+            raise InsufficientResources("Not enough resource available for the request. ")
+        return request_gpus
 
 
 class MPIRunTemplate:
@@ -97,11 +98,13 @@ class MPIRun:
         return retcode
 
     def kill(self): 
-        self.process.kill()
+        os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+
+
 
 if __name__ == "__main__":
     gpu_manager = GPUManager()
-
+    print(gpu_manager.gpus)
     gpus = gpu_manager.request(num_gpus=1)
     print(gpus)
     gpus = gpu_manager.request(num_gpus=2)
