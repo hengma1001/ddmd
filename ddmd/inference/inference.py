@@ -45,7 +45,7 @@ class inference_run(ml_base):
     def get_trained_models(self): 
         return sorted(glob.glob(f"{self.ml_path}/vae_run_*/*h5"))
 
-    def get_md_runs(self, form : str='all') -> List: 
+    def get_md_runs(self, form:str='all') -> List: 
         if form.lower() == 'all': 
             return sorted(glob.glob(f'{self.md_path}/md_run*/*dcd'))
         elif form.lower() == 'done': 
@@ -116,7 +116,7 @@ class inference_run(ml_base):
             trained_models = self.get_trained_models() 
             if trained_models == []: 
                 continue
-            md_done = self.get_md_runs(form='done')
+            md_done = self.get_md_runs(form='all')
             if md_done == []: 
                 continue
             else: 
