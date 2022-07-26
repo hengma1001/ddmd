@@ -2,8 +2,8 @@ import inspect
 import os 
 import time
 import yaml
-import json
 import logging
+import argparse
 import MDAnalysis as mda
 from typing import Union
 from pathlib import Path
@@ -21,6 +21,22 @@ def build_logger(debug=0):
     return logger
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c", "--config", help="YAML config file", type=str, required=True
+    )
+    args = parser.parse_args()
+    return args
+
+
+def dict_from_yaml(yml_file): 
+    return yaml.safe_load(open(yml_file, 'r'))
+
+def dict_to_yaml(dict_t, yml_file): 
+    with open(yml_file, 'w') as fp: 
+        yaml.dump(dict_t, fp, default_flow_style=False)
+
 # class BaseSettings(_BaseSettings):
 #     def dump_yaml(self, cfg_path: PathLike) -> None:
 #         with open(cfg_path, mode="w") as fp:
@@ -35,26 +51,32 @@ def build_logger(debug=0):
 
 class yml_base(object): 
     def dump_yaml(self, cfg_path: PathLike) -> None: 
-        with open(cfg_path, 'w') as yaml_file:
-            yaml.dump(self.get_setup(), yaml_file, default_flow_style=False)
+        dict_to_yaml(self.get_setup(), cfg_path)
 
 
-def create_path(sys_label=None, dir_type='md'): 
+def create_path(dir_type='md', sys_label=None, time_stamp=True): 
     """
     create MD simulation path based on its label (int), 
     and automatically update label if path exists. 
     """
     time_label = int(time.time())
+    dir_path = f'{dir_type}_run'
     if sys_label: 
-        md_path = f'{dir_type}_run_{sys_label}_{time_label}'
-    else: 
-         md_path = f'{dir_type}_run_{time_label}'
+        dir_path = f'{dir_path}_{sys_label}'
+    if time_stamp: 
+         dir_path = f'{dir_path}_{time_label}'
 
     try:
-        os.mkdir(md_path)
-        return md_path
+        os.mkdir(dir_path)
+        return os.path.abspath(dir_path)
     except: 
-        return create_path(sys_label=sys_label, dir_type=dir_type)
+        if time_stamp: 
+            return create_path(
+                    dir_type=dir_type,
+                    sys_label=sys_label, 
+                    time_stamp=time_stamp)
+        else: 
+            return os.path.abspath(dir_path)
 
 
 def get_dir_base(file_path): 
@@ -76,6 +98,14 @@ def get_numoflines(file):
 def get_function_kwargs(func): 
     sig = inspect.signature(func)
     return [i for i in sig.parameters]
+
+def separate_kwargs(func, kwargs): 
+    input_kwargs = {}
+    input_keys = get_function_kwargs(func)
+    for key in input_keys: 
+        if key in kwargs: 
+            input_kwargs[key] = kwargs.pop(key)
+    return input_kwargs, kwargs
 
 
 def write_pdb_frame(pdb, dcd, frame:int, save_path=None): 
