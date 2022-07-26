@@ -13,10 +13,10 @@ from sklearn.model_selection import train_test_split
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from .model_tf2 import CVAE
-from ddmd.utils import build_logger
+from ddmd.utils import build_logger, separate_kwargs
 from ddmd.utils import get_numoflines
 from ddmd.utils import yml_base
-from ddmd.utils import create_path, get_function_kwargs
+from ddmd.utils import create_path
 
 logger = build_logger()
 
@@ -93,11 +93,12 @@ class ml_base(yml_base):
             dense_dropouts=[0],
             **kwargs
             ):
-        input_kwargs = {}
-        input_cm_keys = get_function_kwargs(self.get_contact_maps)
-        for key in input_cm_keys: 
-            if key in kwargs: 
-                input_kwargs[key] = kwargs.pop(key)
+        # input_kwargs = {}
+        # input_cm_keys = get_function_kwargs(self.get_contact_maps)
+        # for key in input_cm_keys: 
+        #     if key in kwargs: 
+        #         input_kwargs[key] = kwargs.pop(key)
+        input_kwargs, kwargs = separate_kwargs(self.get_contact_maps, kwargs)
         cvae_input = self.get_vae_input(strides, **input_kwargs)
         image_size = cvae_input.shape[1:-1]
         channel = cvae_input.shape[-1]
