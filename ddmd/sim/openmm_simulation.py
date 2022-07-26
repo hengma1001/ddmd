@@ -61,9 +61,6 @@ class Simulate(yml_base):
     sim_time : ``int``
         The length of the simulation trajectory in ns. Default is 10
 
-    reeval_time : ``int``
-        The frequency to evaluate whether a run needs to be stopped
-
     dt : ``float``
         The time step of the simulation in fs. Default is 2 
 
