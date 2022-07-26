@@ -40,7 +40,7 @@ class inference_run(ml_base):
         super().__init__(pdb_file, md_path)
         self.ml_path = ml_path
         self.vae = None
-        self.outlier_path = create_path(dir_type='inference')
+        # self.outlier_path = create_path(dir_type='inference')
 
     def get_trained_models(self): 
         return sorted(glob.glob(f"{self.ml_path}/vae_run_*/*h5"))
@@ -109,7 +109,8 @@ class inference_run(ml_base):
         embeddings = self.vae.return_embeddings(cvae_input)
         return embeddings
 
-    def ddmd_run(self, n_outlier=50, md_threshold=0.75, **kwargs): 
+    def ddmd_run(self, n_outlier=50, 
+            md_threshold=0.75, screen_iter=10, **kwargs): 
         iteration = 0
         while True: 
             trained_models = self.get_trained_models() 
@@ -126,6 +127,11 @@ class inference_run(ml_base):
             df_outliers = df.sort_values('lof_score').head(n_outlier)
             if 'ref_pdb' in kwargs: 
                 df_outliers = df_outliers.sort_values('rmsd')
+            # 
+            if iteration % screen_iter == 0: 
+                print(df_outliers.to_string())
+                save_df = f"df_outlier_iter_{iteration}.pkl"
+                df_outliers.to_pickle(save_df)
             # assess simulations 
             sim_running = self.get_md_runs(form='running')
             sim_to_stop = [i for i in sim_running \
