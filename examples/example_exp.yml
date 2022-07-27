@@ -1,12 +1,12 @@
-title: BBA ddmd run # title 
+title: example explicit solvent ddmd run # title 
 continue: False # Whether to start fresh or restart a simulation 
 conda_env: /homes/heng.ma/miniconda3/envs/ddmd # conda env to run simulation
 n_sims: 6 # number of simulations 
 output_dir: /scratch/heng/ddmd/bba_test # directory to deposit output files
 
 md_setup: 
-  pdb_file: /homes/heng.ma/Research/ddmd/ddmd/data/pdbs/bba/1FME-unfolded.pdb # input pdb file 
-  top_file: null # MD topology file
+  pdb_file:  # input pdb file 
+  top_file:  # MD topology file
   checkpoint: null # MD checkpoint t oresetart simulation 
   gpu_id: 0 # no need to changed for single GPU MDs, cuda devices defined from run command
   # output_traj: output.dcd # no need to change these two 
@@ -14,13 +14,11 @@ md_setup:
   sim_time: 10 # length of each segment simulation in ns 
   report_time: 10 # how often a frame is written in ps
   dt: 2 # MD time step in fs
-  explicit_sol: False # whether the system is using explicit solvent model
+  explicit_sol: True # whether the system is using explicit solvent model
   temperature: 300 # in K
   pressure: 1. # in bar 
   nonbonded_cutoff: 1 # in nm 
   init_vel: False # whether to initialize atom velocity
-  forcefield: amber14-all.xml # only for parameterizing implicit solvent runs 
-  sol_model: implicit/gbn2.xml # implicit watermodel
   max_iter: 1000000 # Maximum iterations of MD simulations, default at large number to keep MD running 
 
 ml_setup: 
@@ -43,7 +41,8 @@ infer_setup:
   n_outliers: 50 # number of outliers to identify
   md_threshold: 0.75 # a simulation is qualified to be stop, if it finishes 0.75 of the run and still renders no outliers 
   screen_iter: 10 # output outlier list every 10 iteration
-  ref_pdb: /homes/heng.ma/Research/ddmd/ddmd/data/pdbs/bba/1FME-folded.pdb # reference pdb for rmsd against target state 
-  atom_sel: name CA # selection string for rmsd calculation
+  # uncomment if needed 
+  # ref_pdb: /homes/heng.ma/Research/ddmd/ddmd/data/pdbs/bba/1FME-folded.pdb # reference pdb for rmsd against target state 
+  # atom_sel: name CA # selection string for rmsd calculation
   n_neighbors: 20 # number of neighbors to calculate LOF
 
