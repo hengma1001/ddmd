@@ -37,12 +37,12 @@ Note: It would be necessary to specify the `singularity` path if it's not in the
 ## Run Workflow
 
 ### Simple Run
-The workflow can be simply run with example BBA implicit run. 
+The workflow can be simply run with example BBA folding implicit run. 
 ```bash 
 cd examples
 export PYTHONPATH=$PYTHONPATH:$(realpath ..)
-python run_ddmd.py -c test.yml
+python run_ddmd.py -c simple.yml
 ```
 ### Customized Run
-To be updated
+A detailed setup for BBA in implicit solvent can be found [here](examples/example_imp.yml). 
 
