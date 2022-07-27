@@ -135,9 +135,11 @@ class inference_run(ml_base):
             df_outliers = df.sort_values('lof_score').head(n_outliers)
             if 'ref_pdb' in kwargs: 
                 df_outliers = df_outliers.sort_values('rmsd')
+                logger.info(f"Lowest RMSD: {min(df['rmsd'])} A, "\
+                    f"lowest outlier RMSD: {min(df_outliers['rmsd'])}")
             # 
             if iteration % screen_iter == 0: 
-                print(df_outliers.to_string())
+                logger.info(df_outliers.to_string())
                 save_df = f"df_outlier_iter_{iteration}.pkl"
                 df_outliers.to_pickle(save_df)
             # assess simulations 
