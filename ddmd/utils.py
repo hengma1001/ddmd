@@ -6,6 +6,9 @@ import yaml
 import logging
 import argparse
 import MDAnalysis as mda
+
+from operator import mul
+from functools import reduce 
 from typing import Union
 from pathlib import Path
 from typing import Type, TypeVar
@@ -69,6 +72,7 @@ def create_path(dir_type='md', sys_label=None, time_stamp=True):
          while True:
             try: 
                 os.makedirs(time_path)
+                dir_path = time_path
                 break
             except: 
                 time_path = f'{dir_path}_{time_label + 1}'
@@ -76,7 +80,7 @@ def create_path(dir_type='md', sys_label=None, time_stamp=True):
     else: 
         os.makedirs(dir_path, exist_ok=True)
     return os.path.abspath(dir_path)
-    
+
 
 def get_dir_base(file_path): 
     return os.path.basename(os.path.dirname(file_path))
