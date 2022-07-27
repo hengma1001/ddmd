@@ -132,6 +132,7 @@ class inference_run(ml_base):
                     get_numoflines(md_done[0].replace('dcd', 'log')) - 1
             # build the dataframe and rank outliers 
             df = self.build_md_df(**kwargs)
+            logger.info(f"Built dataframe from {len(df)} frames. ")
             df_outliers = df.sort_values('lof_score').head(n_outliers)
             if 'ref_pdb' in kwargs: 
                 df_outliers = df_outliers.sort_values('rmsd')
