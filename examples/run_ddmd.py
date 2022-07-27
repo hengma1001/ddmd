@@ -8,9 +8,8 @@ logger = ddmd.utils.build_logger(debug=1)
 
 args = parse_args()
 cfg_file = args.config
-conda_path = '/homes/heng.ma/miniconda3/envs/ddmd/'
 
-ddmd_runs = ddmd_run(cfg_file, conda_path)
+ddmd_runs = ddmd_run(cfg_file)
 runs = ddmd_runs.run() 
 
 print("waiting on", len(runs), "runs to finish...")
