@@ -82,7 +82,7 @@ class ml_base(yml_base):
 
         return cvae_input
 
-    def get_padding(strides): 
+    def get_padding(self, strides): 
         """calculate padding for vae input"""
         padding = reduce(mul, [i[0] for i in strides])
         padding = max(2, padding)
@@ -92,11 +92,11 @@ class ml_base(yml_base):
             latent_dim=3, 
             n_conv_layers=4, 
             feature_maps=[16, 16, 16, 16], 
-            filter_shapes=[(3, 3), (3, 3), (3, 3), (3, 3)], 
-            strides=[(1, 1), (1, 1), (1, 1), (1, 1)], 
+            filter_shapes=[[3, 3], [3, 3], [3, 3], [3, 3]], 
+            strides=[[1, 1], [1, 1], [1, 1], [1, 1]], 
             dense_layers=1,
             dense_neurons=[128],
-            dense_dropouts=[0],
+            dense_dropouts=[0.3],
             **kwargs
             ):
         input_kwargs, kwargs = separate_kwargs(self.get_contact_maps, kwargs)
