@@ -117,7 +117,7 @@ class inference_run(ml_base):
         self.vae.load(vae_weight)
         return vae_config
 
-    def ddmd_run(self, n_outlier=50, 
+    def ddmd_run(self, n_outliers=50, 
             md_threshold=0.75, screen_iter=10, **kwargs): 
         iteration = 0
         while True: 
@@ -132,7 +132,7 @@ class inference_run(ml_base):
                     get_numoflines(md_done[0].replace('dcd', 'log')) - 1
             # build the dataframe and rank outliers 
             df = self.build_md_df(**kwargs)
-            df_outliers = df.sort_values('lof_score').head(n_outlier)
+            df_outliers = df.sort_values('lof_score').head(n_outliers)
             if 'ref_pdb' in kwargs: 
                 df_outliers = df_outliers.sort_values('rmsd')
             # 
