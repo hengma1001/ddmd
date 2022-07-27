@@ -44,5 +44,5 @@ export PYTHONPATH=$PYTHONPATH:$(realpath ..)
 python run_ddmd.py -c simple.yml
 ```
 ### Customized Run
-A detailed setup for BBA in implicit solvent can be found [here](examples/example_imp.yml). 
+A detailed setup for BBA in implicit solvent can be [found here](examples/example_imp.yml) and an example for explicit is also [available](examples/example_exp.yml). 
 
