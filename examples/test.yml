@@ -1,4 +1,5 @@
 title: BBA ddmd run
+continue: False
 conda_env: /homes/heng.ma/miniconda3/envs/ddmd
 n_sims: 6
 output_dir: /scratch/heng/ddmd/test
