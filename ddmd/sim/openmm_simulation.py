@@ -96,8 +96,8 @@ class Simulate(yml_base):
             pressure=1.,
             nonbonded_cutoff=1.,
             init_vel=False,
-            forcefield='amber99sbildn.xml', 
-            sol_model='amber99_obc.xml') -> None:
+            forcefield='amber14-all.xml', 
+            sol_model='implicit/gbn2.xml') -> None:
 
         super().__init__()
         # inputs
@@ -140,7 +140,7 @@ class Simulate(yml_base):
         if self.top_file: 
             pdb = pmd.load_file(self.top_file, xyz = self.pdb_file)
             if not self.explicit_sol: 
-                system_setup['implicitSolvent'] = app.OBC1
+                system_setup['implicitSolvent'] = app.GBn2
             system = pdb.createSystem(**system_setup)
         else: 
             # only supporting implicit runs without topology file 
