@@ -49,7 +49,7 @@ class inference_run(ml_base):
         if form.lower() == 'all': 
             return sorted(glob.glob(f'{self.md_path}/md_run*/*dcd'))
         elif form.lower() == 'done': 
-            md_done = sorted(glob.glob(f'{self.md_path}/md_run*/Done'))
+            md_done = sorted(glob.glob(f'{self.md_path}/md_run*/DONE'))
             return [f'{os.path.dirname(i)}/output.dcd' for i in md_done]
         elif form.lower() == 'running': 
             return [i for i in self.get_md_runs(form='all') if i not in self.get_md_runs(form='done')]
@@ -111,8 +111,9 @@ class inference_run(ml_base):
         vae_config = json.load(open(vae_setup, 'r'))
         if self.vae is None: 
             self.vae, _ = self.build_vae(**vae_config)
+            logger.info(f"vae created from {vae_setup}")
         # load weight
-        logger.info(f" ML nn created and loaded weight from {vae_label}")
+        logger.info(f" ML nn loaded weight from {vae_label}")
         self.vae.load(vae_weight)
         return vae_config
 
@@ -123,7 +124,7 @@ class inference_run(ml_base):
             trained_models = self.get_trained_models() 
             if trained_models == []: 
                 continue
-            md_done = self.get_md_runs(form='all')
+            md_done = self.get_md_runs(form='done')
             if md_done == []: 
                 continue
             else: 
@@ -155,6 +156,9 @@ class inference_run(ml_base):
                     continue
                 outlier = df_outliers.iloc[i]
                 outlier.to_json(restart_frame)
+                logger.info(f"{get_dir_base(sim)} finished "\
+                    f"{get_numoflines(sim.replace('dcd', 'log'))} "\
+                    f"of {len_md_done} frames, yet no outlier detected.")
                 logger.info(f"Writing new pdb from frame "\
                     f"{outlier['frame']} of {get_dir_base(outlier['dcd'])} "\
                     f"to {get_dir_base(sim)}")
@@ -166,11 +170,8 @@ class inference_run(ml_base):
         
 
 def lof_score_from_embeddings(
-            embeddings, n_neighbors=20, n_jobs=None, **kwargs):
+            embeddings, n_neighbors=20, **kwargs):
     clf = LocalOutlierFactor(
-            n_neighbors=n_neighbors, 
-            n_jobs=n_jobs,**kwargs).fit(embeddings) 
+            n_neighbors=n_neighbors,**kwargs).fit(embeddings) 
     return clf.negative_outlier_factor_
-
-
 
