@@ -2,16 +2,16 @@ import os
 import glob
 import json
 import time
-from typing import List
-import numpy as np
 import pandas as pd
 import MDAnalysis as mda
 
+from typing import List
 from MDAnalysis.analysis import rms
+from MDAnalysis.analysis import distances
 from sklearn.neighbors import LocalOutlierFactor 
 
 from ddmd.ml import ml_base
-from ddmd.utils import build_logger, create_path, get_numoflines, get_dir_base
+from ddmd.utils import build_logger, get_numoflines, get_dir_base
 
 logger = build_logger()
 
@@ -62,15 +62,22 @@ class inference_run(ml_base):
         if ref_pdb: 
             ref_u = mda.Universe(ref_pdb)
             sel_ref = ref_u.select_atoms(atom_sel)
+        vae_config = self.get_cvae()
+        cm_sel = vae_config['atom_sel'] if 'atom_sel' in vae_config else 'name CA'
+        cm_cutoff = vae_config['cutoff'] if 'cutoff' in vae_config else 8
+        cm_list = []
         for dcd in dcd_files: 
             try: 
                 mda_u = mda.Universe(self.pdb_file, dcd)
                 sel_atoms = mda_u.select_atoms(atom_sel)
+                sel_cm = mda_u.select_atoms(cm_sel)
             except: 
                 logger.info(f"Skipping {dcd}...")
                 continue
 
             for ts in mda_u.trajectory: 
+                cm = (distances.self_distance_array(sel_cm.positions) < cm_cutoff) * 1.0
+                cm_list.append(cm)
                 local_entry = {'pdb': self.pdb_file, 
                             'dcd': os.path.abspath(dcd), 
                             'frame': ts.frame}
@@ -83,13 +90,16 @@ class inference_run(ml_base):
                 df_entry.append(local_entry)
         
         df = pd.DataFrame(df_entry)
-        embeddings = self.get_embeddings()
+        if 'strides' in vae_config: 
+            padding = self.get_padding(vae_config['strides'])
+        vae_input = self.get_vae_input(cm_list, padding=padding)
+        embeddings = self.vae.return_embeddings(vae_input)
         df['embeddings'] = embeddings.tolist()
         outlier_score = lof_score_from_embeddings(embeddings, **kwargs)
         df['lof_score'] = outlier_score
         return df
 
-    def get_embeddings(self): 
+    def get_cvae(self): 
         """
         getting the last model so far
         """
@@ -100,14 +110,11 @@ class inference_run(ml_base):
         # get conf 
         vae_config = json.load(open(vae_setup, 'r'))
         if self.vae is None: 
-            self.vae, cvae_input = self.build_vae(**vae_config)
-        else: 
-            cvae_input = self.get_vae_input(**vae_config)
+            self.vae, _ = self.build_vae(**vae_config)
         # load weight
         logger.info(f" ML nn created and loaded weight from {vae_label}")
         self.vae.load(vae_weight)
-        embeddings = self.vae.return_embeddings(cvae_input)
-        return embeddings
+        return vae_config
 
     def ddmd_run(self, n_outlier=50, 
             md_threshold=0.75, screen_iter=10, **kwargs): 

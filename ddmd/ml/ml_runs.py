@@ -2,6 +2,7 @@ import json
 import os
 import glob
 import json
+from typing import List
 import numpy as np 
 import MDAnalysis as mda
 
@@ -72,15 +73,20 @@ class ml_base(yml_base):
 
         return np.array(cm_list)
 
-    def get_vae_input(self, strides, **kwargs): 
-        contact_maps = self.get_contact_maps(**kwargs)
-        padding = reduce(mul, [i[0] for i in strides])
-        padding = max(2, padding)
+    def get_vae_input(self, cm_list:List=None, padding:int=2, **kwargs): 
+        if cm_list == None: 
+            cm_list = self.get_contact_maps(**kwargs)
         logger.debug(f"  Padding {padding} on the contact maps...")
-        cvae_input = cm_to_cvae(contact_maps, padding=padding)
+        cvae_input = cm_to_cvae(cm_list, padding=padding)
         logger.debug(f"cvae input shape: {cvae_input.shape}")
 
-        return cvae_input   
+        return cvae_input
+
+    def get_padding(strides): 
+        """calculate padding for vae input"""
+        padding = reduce(mul, [i[0] for i in strides])
+        padding = max(2, padding)
+        return padding
 
     def build_vae(self, 
             latent_dim=3, 
@@ -93,13 +99,9 @@ class ml_base(yml_base):
             dense_dropouts=[0],
             **kwargs
             ):
-        # input_kwargs = {}
-        # input_cm_keys = get_function_kwargs(self.get_contact_maps)
-        # for key in input_cm_keys: 
-        #     if key in kwargs: 
-        #         input_kwargs[key] = kwargs.pop(key)
         input_kwargs, kwargs = separate_kwargs(self.get_contact_maps, kwargs)
-        cvae_input = self.get_vae_input(strides, **input_kwargs)
+        padding = self.get_padding(strides)
+        cvae_input = self.get_vae_input(padding=padding, **input_kwargs)
         image_size = cvae_input.shape[1:-1]
         channel = cvae_input.shape[-1]
         cvae = CVAE(
