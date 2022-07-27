@@ -1,6 +1,7 @@
 import inspect
 import os 
 import time
+from numpy import True_
 import yaml
 import logging
 import argparse
@@ -64,20 +65,18 @@ def create_path(dir_type='md', sys_label=None, time_stamp=True):
     if sys_label: 
         dir_path = f'{dir_path}_{sys_label}'
     if time_stamp: 
-         dir_path = f'{dir_path}_{time_label}'
+         time_path = f'{dir_path}_{time_label}'
+         while True:
+            try: 
+                os.makedirs(time_path)
+                break
+            except: 
+                time_path = f'{dir_path}_{time_label + 1}'
 
-    try:
-        os.mkdir(dir_path)
-        return os.path.abspath(dir_path)
-    except: 
-        if time_stamp: 
-            return create_path(
-                    dir_type=dir_type,
-                    sys_label=sys_label, 
-                    time_stamp=time_stamp)
-        else: 
-            return os.path.abspath(dir_path)
-
+    else: 
+        os.makedirs(dir_path, exist_ok=True)
+    return os.path.abspath(dir_path)
+    
 
 def get_dir_base(file_path): 
     return os.path.basename(os.path.dirname(file_path))
@@ -116,3 +115,8 @@ def write_pdb_frame(pdb, dcd, frame:int, save_path=None):
         pdb_save_name = f"{save_path}/{pdb_save_name}"
     mda_u.atoms.write(pdb_save_name)
     return os.path.abspath(pdb_save_name)
+
+
+def backup_path(filepath): 
+    while os.path.exists(filepath): 
+        pass
