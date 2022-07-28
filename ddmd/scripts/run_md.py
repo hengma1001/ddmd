@@ -1,3 +1,5 @@
+#!env python
+
 from ddmd.sim import omm_sim
 from ddmd.utils import dict_from_yaml, parse_args
 

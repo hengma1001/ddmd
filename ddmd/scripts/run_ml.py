@@ -1,3 +1,5 @@
+#!env python
+
 from ddmd.ml import ml_run
 from ddmd.utils import dict_from_yaml, parse_args, separate_kwargs
 

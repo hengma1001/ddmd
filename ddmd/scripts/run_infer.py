@@ -1,4 +1,5 @@
-import os 
+#!env python
+
 from ddmd.inference import inference_run
 from ddmd.utils import dict_from_yaml, parse_args, separate_kwargs
 
