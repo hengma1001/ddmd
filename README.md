@@ -41,7 +41,6 @@ Note: It would be necessary to specify the `singularity` path if it's not in the
 The workflow can be simply run with example BBA folding implicit run. 
 ```bash 
 cd examples
-export PYTHONPATH=$PYTHONPATH:$(realpath ..)
 python run_ddmd.py -c simple.yml
 ```
 ### Customized Run

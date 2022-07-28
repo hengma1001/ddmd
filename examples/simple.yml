@@ -1,11 +1,11 @@
 title: BBA ddmd run
 continue: False
-conda_env: /homes/heng.ma/miniconda3/envs/ddmd
+conda_env: $HOME/miniconda3/envs/ddmd
 n_sims: 6
-output_dir: /scratch/heng/ddmd/test
+output_dir: ./test
 
 md_setup: 
-  pdb_file: /homes/heng.ma/Research/ddmd/ddmd/data/pdbs/bba/1FME-unfolded.pdb
+  pdb_file: ..//data/pdbs/bba/1FME-unfolded.pdb
   top_file: null
   sim_time: 10 # in ns
   report_time: 10 # in ps
@@ -19,4 +19,4 @@ ml_setup:
   atom_sel: name CA
 
 infer_setup: 
-  ref_pdb: /homes/heng.ma/Research/ddmd/ddmd/data/pdbs/bba/1FME-folded.pdb
+  ref_pdb: ..//data/pdbs/bba/1FME-folded.pdb
