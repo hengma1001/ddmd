@@ -124,3 +124,10 @@ def write_pdb_frame(pdb, dcd, frame:int, save_path=None):
 def backup_path(filepath): 
     while os.path.exists(filepath): 
         pass
+
+
+def ddmd_abspath(filepath): 
+    if filepath: 
+        return os.path.abspath(filepath)
+    else: 
+        return None

@@ -3,7 +3,7 @@ import time
 import ddmd
 import shutil
 from ddmd.task import Run, GPUManager
-from ddmd.utils import build_logger, create_path
+from ddmd.utils import build_logger, create_path, ddmd_abspath
 from ddmd.utils import dict_from_yaml, dict_to_yaml
 
 exe_scripts = {
@@ -25,7 +25,8 @@ class ddmd_run(object):
         Whether to run ml and infer
     """
     def __init__(self, cfg_yml) -> None:
-        self.cfg_yml = cfg_yml
+        self.cfg_yml = os.path.abspath(cfg_yml)
+        self.yml_dir = os.path.dirname(self.cfg_yml)
         self.ddmd_setup = dict_from_yaml(self.cfg_yml)
         if 'conda_env' in self.ddmd_setup: 
             conda_path = self.ddmd_setup['conda_env']
@@ -66,6 +67,12 @@ class ddmd_run(object):
 
     def build_tasks(self): 
         md_setup = self.ddmd_setup['md_setup']
+        input_files = ['pdb_file', 'top_file', 'checkpoint']
+        for input in input_files: 
+            if input in md_setup and md_setup[input]: 
+                if not os.path.isabs(md_setup[input]): 
+                    md_setup[input] = os.path.join(self.yml_dir, md_setup[input])
+                    logger.debug(f"updated entry{input} to {md_setup[input]}.")
         self.md_path = create_path(dir_type='md', time_stamp=False)
         md_yml = f"{self.md_path}/md.yml"
         dict_to_yaml(md_setup, md_yml)
