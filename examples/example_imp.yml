@@ -8,7 +8,7 @@ md_setup:
   pdb_file: /homes/heng.ma/Research/ddmd/ddmd/data/pdbs/bba/1FME-unfolded.pdb # input pdb file 
   top_file: null # MD topology file
   checkpoint: null # MD checkpoint t oresetart simulation 
-  gpu_id: 0 # no need to changed for single GPU MDs, cuda devices defined from run command
+  # gpu_id: 0 # no need to changed for single GPU MDs, cuda devices defined from run command
   # output_traj: output.dcd # no need to change these two 
   # output_log: output.log
   sim_time: 10 # length of each segment simulation in ns 
@@ -21,7 +21,7 @@ md_setup:
   init_vel: False # whether to initialize atom velocity
   forcefield: amber14-all.xml # only for parameterizing implicit solvent runs 
   sol_model: implicit/gbn2.xml # implicit watermodel
-  max_iter: 1000000 # Maximum iterations of MD simulations, default at large number to keep MD running 
+  max_iter: 1000000 # Maximum iterations of MD simulation sections, default at large number to keep MD running 
 
 ml_setup: 
   n_train_start: 1000 # number of simulation frames to start training 

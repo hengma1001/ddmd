@@ -16,6 +16,7 @@ After anaconda/miniconda is installed in your machine, the environment can be bu
 
 ```
 conda env create -f envs/ddmd.yml
+pip install .
 ```
 
 ### Docker
@@ -45,4 +46,52 @@ python run_ddmd.py -c simple.yml
 ```
 ### Customized Run
 A detailed setup for BBA in implicit solvent can be [found here](examples/example_imp.yml) and an example for explicit is also [available](examples/example_exp.yml). 
+
+## Workflow parameters
+The workflow is set up with a yaml file, as in [`example_imp.yml`](examples/example_imp.yml) or [`example_exp.yml`](examples/example_exp.yml), where all the available options/nobs are listed. 
+
+- title: title for the workflow
+- continue: `True` or `False`, whether to keep the previous run exists in the `output_dir`. It's still under development, as the unfinished MD runs from previous run will also be included. It's recommand to remove them manually prior to using this option. 
+- conda_env: `conda env path`, conda environment where all the dependencies are installed. It will pick up the current shell conda env if unspecified. 
+- n_sims: `int`, number of simulations to run. It will automatically be trimmed if not enough resource/GPUs present. 
+- output_dir: `output path`, output directory. Highly recommand to use SSDs. 
+
+- md_setup: the nested setup for md simulations 
+  - pdb_file: path to input pdb 
+  - top_file: path to topology file 
+  - checkpoint: OpenMM checkpoint if continuing a run 
+  - sim_time: length of MD simulation section, in ns 
+  - report_time: trajectory and log output frequency, in ps 
+  - dt: MD simulations time step, in fs
+  - explicit_sol: `Bool` describing the solvent condition 
+  - temperature: simulation temperture, in K 
+  - pressure: simulation pressure, in bar
+  - nonbonded_cutoff: cutoff for nonbonded interactions, in nm
+  - init_vel: `Bool`, whether to initial atom velocity starting a simualtion 
+  - max_iter: the maximum iterations of MD simulation sections to run
+
+- ml_setup: the nested yaml for ml setup
+  - n_train_start: number of frames to start cvae training 
+  - reatrain_freq: `1-` how much data the workflow needs to start retraining, `retrain_freq` times of the previous training 
+  - batch_size: training batch size  
+  - epochs: training epochs
+  - latent_dim: latent dimension of vae 
+  - n_conv_layers: number of convolutional layers 
+  - feature_maps: list of feature map depth for the conv layers 
+  - filter_shapes: list of feature map shapes for the conv layers
+  - strides: strides for each conv layers 
+  - dense_layers: number of dense layers 
+  - dense_neurons: number of neurons for dense layers 
+  - dense_dropouts: dropout rate of dense layers 
+  - atom_sel: selection string for building contact maps 
+  - cutoff: cutoff for contact maps in angstrom 
+
+- infer_setup: nested setup for inference setup 
+  - n_outliers: number of outliers to identify 
+  - md_threshold: how long a simulation needs to run before being qualified to stop 
+  - screen_iter: output logs of outliers every 10 iteration
+  - ref_pdb: target pdb for folding, also used to calculate rmsd 
+  - atom_sel: selection string for rmsd calculation 
+  - n_neighbors: number of neighbors to consider when calculating LOF
+  - other LOF setup can also be ported here
 

@@ -4,11 +4,11 @@ conda_env: /homes/heng.ma/miniconda3/envs/ddmd # conda env to run simulation
 n_sims: 6 # number of simulations 
 output_dir: /scratch/heng/ddmd/bba_test # directory to deposit output files
 
-md_setup: 
+md_setup:  # starting a nested dictionary for md simulations 
   pdb_file:  # input pdb file 
   top_file:  # MD topology file
   checkpoint: null # MD checkpoint t oresetart simulation 
-  gpu_id: 0 # no need to changed for single GPU MDs, cuda devices defined from run command
+  # gpu_id: 0 # no need to changed for single GPU MDs, cuda devices defined from run command
   # output_traj: output.dcd # no need to change these two 
   # output_log: output.log
   sim_time: 10 # length of each segment simulation in ns 
@@ -19,7 +19,7 @@ md_setup:
   pressure: 1. # in bar 
   nonbonded_cutoff: 1 # in nm 
   init_vel: False # whether to initialize atom velocity
-  max_iter: 1000000 # Maximum iterations of MD simulations, default at large number to keep MD running 
+  max_iter: 1000000 # Maximum iterations of MD simulation sections, default at large number to keep MD running 
 
 ml_setup: 
   n_train_start: 1000 # number of simulation frames to start training 
