@@ -1,9 +1,10 @@
 import os
 import time
 import ddmd
+import glob
 import shutil
 from ddmd.task import Run, GPUManager
-from ddmd.utils import build_logger, create_path, ddmd_abspath
+from ddmd.utils import build_logger, create_path
 from ddmd.utils import dict_from_yaml, dict_to_yaml
 
 exe_scripts = {
@@ -36,11 +37,18 @@ class ddmd_run(object):
         self.md_only = self.ddmd_setup['md_only'] if 'md_only' in self.ddmd_setup else False
         work_dir = self.ddmd_setup['output_dir']
         cont_run =self.ddmd_setup['continue'] if 'continue' in self.ddmd_setup else False
-        if os.path.exists(work_dir) and not cont_run: 
-            bkup_dir = work_dir + f'_{int(time.time())}'
-            shutil.move(work_dir, bkup_dir)
-            logger.info(f"Back up old {work_dir} to {bkup_dir}")
-        os.makedirs(work_dir)
+        if os.path.exists(work_dir):
+            if cont_run:
+                md_previous = glob.glob(f"{work_dir}/md_run/md_run_*")
+                md_unfinished = [i for i in md_previous if not os.path.exists(f"{i}/DONE")]
+                for md in md_unfinished: 
+                    shutil.move(md, f"{os.path.dirname(md)}/_{os.path.basename(md)}")
+            else: 
+                bkup_dir = work_dir + f'_{int(time.time())}'
+                shutil.move(work_dir, bkup_dir)
+                logger.info(f"Back up old {work_dir} to {bkup_dir}")
+        else:
+            os.makedirs(work_dir)
         os.chdir(work_dir)
 
         # logging 
