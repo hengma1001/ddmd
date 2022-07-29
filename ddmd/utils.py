@@ -1,14 +1,11 @@
 import inspect
 import os 
 import time
-from numpy import True_
 import yaml
 import logging
 import argparse
 import MDAnalysis as mda
 
-from operator import mul
-from functools import reduce 
 from typing import Union
 from pathlib import Path
 from typing import Type, TypeVar
