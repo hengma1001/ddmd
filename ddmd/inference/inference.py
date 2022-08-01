@@ -154,6 +154,10 @@ class inference_run(ml_base):
                     > len_md_done * md_threshold]
             for i, sim in enumerate(sim_to_stop): 
                 sim_path = os.path.dirname(sim)
+                sim_run_len = get_numoflines(i.replace('dcd', 'log'))
+                if sim_run_len >= len_md_done: 
+                    logger.info(f"{get_dir_base(sim)} finished before inferencing, skipping...")
+                    continue
                 restart_frame = f"{sim_path}/new_pdb"
                 if os.path.exists(restart_frame): 
                     continue
