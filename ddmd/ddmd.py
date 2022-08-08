@@ -100,6 +100,10 @@ class ddmd_run(object):
         infer_setup['pdb_file'] = md_setup['pdb_file']
         infer_setup['md_path'] = self.md_path
         infer_setup['ml_path'] = self.ml_path
+        if 'ref_pdb' in infer_setup and infer_setup['ref_pdb']: 
+            if not os.path.isabs(infer_setup['ref_pdb']): 
+                infer_setup['ref_pdb'] = os.path.join(self.yml_dir, infer_setup['ref_pdb'])
+                logger.debug(f"updated entry{'ref_pdb'} to {infer_setup['ref_pdb']}.")
         self.infer_path = create_path(dir_type='infer', time_stamp=False)
         infer_yml = f"{self.infer_path}/infer.yml"
         dict_to_yaml(infer_setup, infer_yml)
