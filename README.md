@@ -16,6 +16,7 @@ After anaconda/miniconda is installed in your machine, the environment can be bu
 
 ```
 conda env create -f envs/ddmd.yml
+pip install .
 ```
 
 ### Docker
@@ -37,37 +38,59 @@ Note: It would be necessary to specify the `singularity` path if it's not in the
 ## Run Workflow
 
 ### Simple Run
-The workflow can be simply run with 
+The workflow can be simply run with example BBA folding implicit run. 
 ```bash 
-python run_local.py
+cd examples
+python run_ddmd.py -c simple.yml
 ```
 ### Customized Run
+A detailed setup for BBA in implicit solvent can be [found here](examples/example_imp.yml) and an example for explicit is also [available](examples/example_exp.yml). 
 
-The workflow contains 3 main components, Molecular Dynamics simulations, machine learning neural network and inference node. This guild will provide instructions to set up your own system. 
+## Workflow parameters
+The workflow is set up with a yaml file, as in [`example_imp.yml`](examples/example_imp.yml) or [`example_exp.yml`](examples/example_exp.yml), where all the available options/nobs are listed. 
 
-1. MD simulations (`MD_exps`)
+- title: title for the workflow
+- continue: `True` or `False`, whether to keep the previous run exists in the `output_dir`. It's still under development, as the unfinished MD runs from previous run will also be included. It's recommand to remove them manually prior to using this option. 
+- conda_env: `conda env path`, conda environment where all the dependencies are installed. It will pick up the current shell conda env if unspecified. 
+- n_sims: `int`, number of simulations to run. It will automatically be trimmed if not enough resource/GPUs present. 
+- output_dir: `output path`, output directory. Highly recommand to use SSDs. 
 
-    The MD simulations requires inputs of molecular positions and interactions. For the moment, these files are ported to workflow in line 30-34 of `run_local.py` file. 
+- md_setup: the nested setup for md simulations 
+  - pdb_file: path to input pdb 
+  - top_file: path to topology file 
+  - checkpoint: OpenMM checkpoint if continuing a run 
+  - sim_time: length of MD simulation section, in ns 
+  - report_time: trajectory and log output frequency, in ps 
+  - dt: MD simulations time step, in fs
+  - explicit_sol: `Bool` describing the solvent condition 
+  - temperature: simulation temperture, in K 
+  - pressure: simulation pressure, in bar
+  - nonbonded_cutoff: cutoff for nonbonded interactions, in nm
+  - init_vel: `Bool`, whether to initial atom velocity starting a simualtion 
+  - max_iter: the maximum iterations of MD simulation sections to run
 
-2. Agglomerating thread (`MD_to_CVAE`)
-    
-    This thread works as a watcher for the MD simulation process. In the beginning of the workflow, it withholds the ML training until sufficient MD simulations frames are collects. Later on, it manages retraining of ML network, whenever it accumulates 1.6 times more frames than previous training. 
+- ml_setup: the nested yaml for ml setup
+  - n_train_start: number of frames to start cvae training 
+  - reatrain_freq: `1-` how much data the workflow needs to start retraining, `retrain_freq` times of the previous training 
+  - batch_size: training batch size  
+  - epochs: training epochs
+  - latent_dim: latent dimension of vae 
+  - n_conv_layers: number of convolutional layers 
+  - feature_maps: list of feature map depth for the conv layers 
+  - filter_shapes: list of feature map shapes for the conv layers
+  - strides: strides for each conv layers 
+  - dense_layers: number of dense layers 
+  - dense_neurons: number of neurons for dense layers 
+  - dense_dropouts: dropout rate of dense layers 
+  - atom_sel: selection string for building contact maps 
+  - cutoff: cutoff for contact maps in angstrom 
 
-    The number of the MD frames to initiate the first ML training can be modified in line 38 of `run_local.py`. 
+- infer_setup: nested setup for inference setup 
+  - n_outliers: number of outliers to identify 
+  - md_threshold: how long a simulation needs to run before being qualified to stop 
+  - screen_iter: output logs of outliers every 10 iteration
+  - ref_pdb: target pdb for folding, also used to calculate rmsd 
+  - atom_sel: selection string for rmsd calculation 
+  - n_neighbors: number of neighbors to consider when calculating LOF
+  - other LOF setup can also be ported here
 
-
-3. ML network (`CVAE_exps`)
-
-    The workflow currently uses a convolutional variational autoencoder to embed the bio-molecules into a low-dimensional latent representations. The `batch_size` can be modified in line 42 of `run_local.py`. 
-
-    More ML architecture parameters are stored in `CVAE_exps/cvae/CVAE.py`. For bigger or more complex systems, the network could be too big for the available hardware to the user. Some adjustments can be made to the CVAE architecture to accommodate the challenge if simply changing batch size is insufficient. The common practice was increasing the stride size or reducing the filter depth of ConV layers. 
-
-2. Inference (`Outlier_search`)
-   
-   The inference between MD and ML is managed by `Outlier_search/outlier_locator.py`. The current version searches the latent space for outliers and restarts MD simulations from these outliers. It also trims out unproductive MD simulations to make resources available. By default, it picks top 100 outliers and ranks them according to their local outlier factors. The top one will be used to start the next new MD simulation. 
-
-   The number of outliers can be changed by `--n_out` to the execution script in line 128 of `run_local.py`. 
-
-
-## Development notes
-1. The current inputs and parameters assignments are hard-coded in the running script. A formatted input, such as `yml`, should be in place soon. 

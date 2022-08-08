@@ -1,0 +1,22 @@
+title: BBA ddmd run
+continue: False
+conda_env: $HOME/miniconda3/envs/ddmd
+n_sims: 6
+output_dir: ./test
+
+md_setup: 
+  pdb_file: ..//data/pdbs/bba/1FME-unfolded.pdb
+  top_file: null
+  sim_time: 10 # in ns
+  report_time: 10 # in ps
+  dt: 2 # in fs
+  explicit_sol: False
+
+ml_setup: 
+  epochs: 10
+  strides: [[1, 1], [1, 1], [1, 1], [2, 2]] 
+  cutoff: 12
+  atom_sel: name CA
+
+infer_setup: 
+  ref_pdb: ..//data/pdbs/bba/1FME-folded.pdb
