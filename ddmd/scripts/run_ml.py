@@ -3,9 +3,14 @@
 from ddmd.ml import ml_run
 from ddmd.utils import dict_from_yaml, parse_args, separate_kwargs
 
-args = parse_args()
-ml_setup = dict_from_yaml(args.config)
+# args = parse_args()
+def main(args): 
+    ml_setup = dict_from_yaml(args.config)
 
-ml_kwargs, ddmd_kwargs = separate_kwargs(ml_run, ml_setup)
-runs = ml_run(**ml_kwargs)
-runs.ddmd_run(**ddmd_kwargs)
+    ml_kwargs, ddmd_kwargs = separate_kwargs(ml_run, ml_setup)
+    runs = ml_run(**ml_kwargs)
+    runs.ddmd_run(**ddmd_kwargs)
+
+if __name__ == '__main__': 
+    args = parse_args()
+    main(args)
