@@ -75,7 +75,8 @@ class Run:
             shell=True,
             cwd=cwd,
             stdout=self.outfile,
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT,
+            preexec_fn=os.setsid
         )
 
     def poll(self):
