@@ -41,7 +41,7 @@ Note: It would be necessary to specify the `singularity` path if it's not in the
 The workflow can be simply run with example BBA folding implicit run. 
 ```bash 
 cd examples
-python run_ddmd.py -c simple.yml
+ddmd run_ddmd -c simple.yml
 ```
 ### Customized Run
 A detailed setup for BBA in implicit solvent can be [found here](examples/example_imp.yml) and an example for explicit is also [available](examples/example_exp.yml). 

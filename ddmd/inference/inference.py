@@ -137,7 +137,7 @@ class inference_run(ml_base):
             if 'ref_pdb' in kwargs: 
                 df_outliers = df_outliers.sort_values('rmsd')
                 logger.info(f"Lowest RMSD: {min(df['rmsd'])} A, "\
-                    f"lowest outlier RMSD: {min(df_outliers['rmsd'])}")
+                    f"lowest outlier RMSD: {min(df_outliers['rmsd'])} A. ")
             # 
             if iteration % screen_iter == 0: 
                 logger.info(df_outliers.to_string())

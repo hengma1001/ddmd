@@ -29,11 +29,7 @@ class ddmd_run(object):
         self.cfg_yml = os.path.abspath(cfg_yml)
         self.yml_dir = os.path.dirname(self.cfg_yml)
         self.ddmd_setup = dict_from_yaml(self.cfg_yml)
-        if 'conda_env' in self.ddmd_setup: 
-            conda_path = self.ddmd_setup['conda_env']
-            self.python_exe = f"{conda_path}/bin/python" 
-        else: 
-            self.python_exe = 'python'
+        
         self.md_only = self.ddmd_setup['md_only'] if 'md_only' in self.ddmd_setup else False
         work_dir = self.ddmd_setup['output_dir']
         cont_run =self.ddmd_setup['continue'] if 'continue' in self.ddmd_setup else False
@@ -47,6 +43,7 @@ class ddmd_run(object):
                 bkup_dir = work_dir + f'_{int(time.time())}'
                 shutil.move(work_dir, bkup_dir)
                 logger.info(f"Back up old {work_dir} to {bkup_dir}")
+                os.makedirs(work_dir)
         else:
             os.makedirs(work_dir)
         os.chdir(work_dir)
@@ -113,8 +110,7 @@ class ddmd_run(object):
             yml_file, work_path,
             n_gpus=1, job_type='md', 
             type_ind=-1): 
-        exe_py = f"{ddmd.__path__[0]}/scripts/{exe_scripts[job_type]}"
-        run_cmd = f"{self.python_exe} {exe_py} -c {yml_file}"
+        run_cmd = f"ddmd run_{job_type} -c {yml_file}"
         # setting up output log file
         output_file = f"./{self.log_dir}/{job_type}"
         if type_ind >= 0: 
