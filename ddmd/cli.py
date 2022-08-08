@@ -27,8 +27,6 @@ def main():
 
     for module in modules:
         this_parser = subparsers.add_parser(get_str_name(module), description=module.__doc__)
-        # module.add_args(this_parser)
-        # print(this_parser)
         this_parser.set_defaults(func=module.main)
         this_parser.add_argument(
         "-c", "--config", help="YAML config file", type=str, required=True
