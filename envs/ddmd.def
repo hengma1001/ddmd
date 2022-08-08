@@ -15,6 +15,7 @@ From: nvidia/cuda:11.1-cudnn8-devel-ubuntu18.04
     export PATH="/opt/conda/bin:$PATH"
     conda update -qy conda
     conda env update -n base -f ddmd.yml
+    pip install ..
 
 
 %environment

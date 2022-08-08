@@ -30,4 +30,5 @@ COPY . /app/ddmd
 ENV PATH="/opt/conda/bin:$PATH"
 RUN conda update -qy conda \
     && conda env update -n base -f /app/ddmd/envs/ddmd.yml
+RUN cd /app/ddmd && pip install .
 
