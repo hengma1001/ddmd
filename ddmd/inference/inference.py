@@ -56,8 +56,8 @@ class inference_run(ml_base):
         else: 
             raise("Form not defined, using all, done or running ...")
 
-    def build_md_df(self, ref_pdb=None, atom_sel="name CA", **kwargs): 
-        dcd_files = self.get_md_runs(form='all')
+    def build_md_df(self, ref_pdb=None, atom_sel="name CA", form='all', **kwargs): 
+        dcd_files = self.get_md_runs(form=form)
         df_entry = []
         if ref_pdb: 
             ref_u = mda.Universe(ref_pdb)
