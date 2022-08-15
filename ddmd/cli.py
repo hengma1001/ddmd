@@ -6,6 +6,7 @@ import ddmd.scripts.run_md
 import ddmd.scripts.run_ml
 import ddmd.scripts.run_infer
 import ddmd.scripts.run_ddmd
+import ddmd.scripts.analysis
 # from ddmd.utils import parse_args
 
 def main(): 
@@ -17,6 +18,7 @@ def main():
         ddmd.scripts.run_ml, 
         ddmd.scripts.run_infer, 
         ddmd.scripts.run_ddmd,
+        ddmd.scripts.analysis,
     ]
 
     subparsers = parser.add_subparsers(title='Choose a command')
