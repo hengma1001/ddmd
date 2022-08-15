@@ -27,7 +27,6 @@ class analysis_run(inference_run):
         # save df 
         df.to_pickle("result.pkl")
 
-        
         # reshape dtraj
         dtrajs = {}
         for gpu_id in df.gpu_id.unique(): 
