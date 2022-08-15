@@ -94,3 +94,9 @@ The workflow is set up with a yaml file, as in [`example_imp.yml`](examples/exam
   - n_neighbors: number of neighbors to consider when calculating LOF
   - other LOF setup can also be ported here
 
+## Analysis
+The analysis of the simulation runs can be done through the following command. 
+```bash
+ddmd analysis -c infer.yml
+```
+It generates two pickle files, one of which contains all the simulation results, `result.pkl` and the other with the sampling efficiency information, `sampling.pkl`. 
