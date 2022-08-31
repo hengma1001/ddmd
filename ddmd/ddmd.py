@@ -55,20 +55,23 @@ class ddmd_run(object):
         # manage GPUs
         self.n_sims=self.ddmd_setup['n_sims']
         if self.md_only: 
-            n_gpus = self.n_sims 
+            n_runs = self.n_sims 
             logger.info(f"Running only {self.n_sims} simulations...")
         else:
-            n_gpus = self.n_sims + 2
-        self.gpu_ids = GPUManager().request(num_gpus=n_gpus)
+            n_runs = self.n_sims + 2
+        self.gpu_ids = GPUManager().request(num_gpus=n_runs)
         logger.info(f"Available {len(self.gpu_ids)} GPUs: {self.gpu_ids}")
         # if not enough GPUs, reconf the workflow
-        if len(self.gpu_ids) < n_gpus: 
-            self.n_sims = self.n_sims + len(self.gpu_ids) - n_gpus
+        if len(self.gpu_ids) < n_runs: 
             n_gpus = len(self.gpu_ids)
+            self.n_sims = self.n_sims + n_gpus - n_runs
             logger.info("Not enough GPUs avaible for all the runs, and "\
                 f"reduce number of MD runs to {self.n_sims}")
-            logger.info(f"New configuration: {self.n_sims} simulations, "\
-                f"1 training, and 1 inference node. Need {n_gpus} GPUs. ")
+            logger.info(f"New configuration: {self.n_sims} simulations, ")
+            if self.md_only:
+                logger.info(f"using {n_gpus} GPUs.")
+            else:
+                logger.info(f"1 training, and 1 inference node, using {n_gpus} GPUs. ")
 
     def build_tasks(self): 
         md_setup = self.ddmd_setup['md_setup']
