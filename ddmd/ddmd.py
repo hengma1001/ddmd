@@ -7,10 +7,6 @@ from ddmd.task import Run, GPUManager
 from ddmd.utils import build_logger, create_path
 from ddmd.utils import dict_from_yaml, dict_to_yaml
 
-exe_scripts = {
-        'md': 'run_md.py', 'ml': 'run_ml.py', 
-        'infer': 'run_infer.py'}
-
 logger = build_logger()
 
 class ddmd_run(object): 
@@ -75,6 +71,7 @@ class ddmd_run(object):
 
     def build_tasks(self): 
         md_setup = self.ddmd_setup['md_setup']
+        # correcting file path
         input_files = ['pdb_file', 'top_file', 'checkpoint']
         for input in input_files: 
             if input in md_setup and md_setup[input]: 
@@ -84,6 +81,7 @@ class ddmd_run(object):
         self.md_path = create_path(dir_type='md', time_stamp=False)
         md_yml = f"{self.md_path}/md.yml"
         dict_to_yaml(md_setup, md_yml)
+
         if self.md_only: 
             self.ml_path = None
             self.infer_path = None
