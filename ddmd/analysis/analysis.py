@@ -11,9 +11,9 @@ class analysis_run(inference_run):
     def __init__(self, pdb_file, md_path, ml_path) -> None:
         super().__init__(pdb_file, md_path, ml_path)
     
-    def run(self, n_clusters=500, random_state=42, init='k-means++', **kwargs): 
+    def run(self, n_clusters=500, random_state=42, init='k-means++', md_form='done', **kwargs): 
         # base analysis from infer
-        df = self.build_md_df(form='done', **kwargs)
+        df = self.build_md_df(form=md_form, **kwargs)
         df['sys_label'] = [get_dir_base(i) for i in df['dcd']]
         df['gpu_id'] = [i.split('_')[2] for i in df['sys_label']]
         embeddings = np.array(df['embeddings'].to_list())
@@ -25,6 +25,7 @@ class analysis_run(inference_run):
         # sort the dataframe to represent time evo
         df.sort_values(by=['gpu_id', 'sys_label', 'frame'], inplace=True)
         # save df 
+        self.df = df
         df.to_pickle("result.pkl")
 
         # reshape dtraj
@@ -43,8 +44,12 @@ class analysis_run(inference_run):
         sampling_effs = pd.DataFrame(sampling_effs)
         sampling_effs.to_pickle('sampling.pkl')
 
+        # build tree of MD simulations 
 
-def kmeans_emb_clustering(embeddings, n_clusters=500, random_state=42, init='k-means++'): 
+
+def kmeans_emb_clustering(
+    embeddings, n_clusters=500, 
+    random_state=42, init='k-means++'): 
     kmeans = MiniBatchKMeans(
             n_clusters=n_clusters, 
             init=init, random_state=random_state
