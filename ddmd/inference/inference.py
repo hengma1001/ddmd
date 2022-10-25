@@ -82,7 +82,7 @@ class inference_run(ml_base):
             for ts in mda_u.trajectory: 
                 cm = (distances.self_distance_array(sel_cm.positions) < cm_cutoff) * 1.0
                 cm_list.append(cm)
-                local_entry = {'pdb': os.path.basename(pdb_file), 
+                local_entry = {'pdb': os.path.abspath(pdb_file), 
                             'dcd': os.path.abspath(dcd), 
                             'frame': ts.frame}
                 if ref_pdb: 
