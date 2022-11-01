@@ -4,6 +4,7 @@ import glob
 import json
 import numpy as np 
 import MDAnalysis as mda
+import tensorflow as tf
 
 from operator import mul
 from functools import reduce  
@@ -159,6 +160,9 @@ class ml_run(ml_base):
                 json.dump(cvae_setup, json_file)
             logger.info(f"  Finished training, next training will "\
                     f"start with {self.n_train_start} frames...")
+                    
+            del cvae
+            tf.keras.backend.clear_session()
 
 
 def cm_to_cvae(cm_data, padding=2): 
