@@ -17,8 +17,10 @@ def main(args):
             # Clean up runs which finished (poll() returns process code)
             runnings = [run for run in runs if run.poll() is None]
             if len(runs) != len(runnings):
-                logger.info(f"waiting on {len(runnings)} runs to finish...")
-                runs = runnings 
+                logger.info(f"{len(runs) - len(runnings)} run(s) has stoppped. Terminating the remaining runs...")
+                for p in runs: 
+                    p.kill()
+                logger.info("cleaned up!")
             time.sleep(5)
         logger.info("All done!")
     except KeyboardInterrupt: 
