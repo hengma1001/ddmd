@@ -8,10 +8,11 @@ import MDAnalysis as mda
 from typing import List
 from MDAnalysis.analysis import rms
 from MDAnalysis.analysis import distances
-from sklearn.neighbors import LocalOutlierFactor 
+from sklearn.neighbors import LocalOutlierFactor
+from tqdm import tqdm
 
 from ddmd.ml import ml_base
-from ddmd.utils import build_logger, get_numoflines, get_dir_base
+from ddmd.utils import build_logger, dict_from_yaml, get_numoflines, get_dir_base
 
 logger = build_logger()
 
@@ -56,29 +57,32 @@ class inference_run(ml_base):
         else: 
             raise("Form not defined, using all, done or running ...")
 
-    def build_md_df(self, ref_pdb=None, atom_sel="name CA", **kwargs): 
-        dcd_files = self.get_md_runs(form='all')
+    def build_md_df(self, ref_pdb=None, atom_sel="name CA", form='all', **kwargs): 
+        dcd_files = self.get_md_runs(form=form)
         df_entry = []
         if ref_pdb: 
             ref_u = mda.Universe(ref_pdb)
             sel_ref = ref_u.select_atoms(atom_sel)
-        vae_config = self.get_cvae()
+        vae_config = self.get_cvae(dry_run=True)
         cm_sel = vae_config['atom_sel'] if 'atom_sel' in vae_config else 'name CA'
         cm_cutoff = vae_config['cutoff'] if 'cutoff' in vae_config else 8
+        logger.info("Processing MD trajectories.")
         cm_list = []
-        for dcd in dcd_files: 
+        for dcd in tqdm(dcd_files): 
+            setup_yml = f"{os.path.dirname(dcd)}/setting.yml"
+            pdb_file = dict_from_yaml(setup_yml)['pdb_file']
             try: 
                 mda_u = mda.Universe(self.pdb_file, dcd)
-                sel_atoms = mda_u.select_atoms(atom_sel)
-                sel_cm = mda_u.select_atoms(cm_sel)
             except: 
                 logger.info(f"Skipping {dcd}...")
                 continue
 
+            sel_atoms = mda_u.select_atoms(atom_sel)
+            sel_cm = mda_u.select_atoms(cm_sel)
             for ts in mda_u.trajectory: 
                 cm = (distances.self_distance_array(sel_cm.positions) < cm_cutoff) * 1.0
                 cm_list.append(cm)
-                local_entry = {'pdb': self.pdb_file, 
+                local_entry = {'pdb': os.path.abspath(pdb_file), 
                             'dcd': os.path.abspath(dcd), 
                             'frame': ts.frame}
                 if ref_pdb: 
@@ -99,7 +103,7 @@ class inference_run(ml_base):
         df['lof_score'] = outlier_score
         return df
 
-    def get_cvae(self): 
+    def get_cvae(self, **kwargs): 
         """
         getting the last model so far
         """
@@ -110,7 +114,7 @@ class inference_run(ml_base):
         # get conf 
         vae_config = json.load(open(vae_setup, 'r'))
         if self.vae is None: 
-            self.vae, _ = self.build_vae(**vae_config)
+            self.vae, _ = self.build_vae(**vae_config, **kwargs)
             logger.info(f"vae created from {vae_setup}")
         # load weight
         logger.info(f" ML nn loaded weight from {vae_label}")
@@ -154,7 +158,7 @@ class inference_run(ml_base):
                     > len_md_done * md_threshold]
             for i, sim in enumerate(sim_to_stop): 
                 sim_path = os.path.dirname(sim)
-                sim_run_len = get_numoflines(i.replace('dcd', 'log'))
+                sim_run_len = get_numoflines(sim.replace('dcd', 'log'))
                 if sim_run_len >= len_md_done: 
                     logger.info(f"{get_dir_base(sim)} finished before inferencing, skipping...")
                     continue

@@ -2,14 +2,17 @@ import json
 import os
 import glob
 import json
-from typing import List
 import numpy as np 
 import MDAnalysis as mda
+import tensorflow as tf
 
 from operator import mul
 from functools import reduce  
 from MDAnalysis.analysis import distances
 from sklearn.model_selection import train_test_split
+from typing import List, Optional
+
+from tqdm import tqdm
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -56,10 +59,17 @@ class ml_base(yml_base):
     def get_contact_maps(self, 
             atom_sel:str='name CA', 
             cutoff:float=8., 
+            dry_run:bool=False,
             ): 
-        dcd_files = sorted(glob.glob(f"{self.md_path}/md_run_*/*.dcd"))
+        # only use one traj file if dry run
+        if dry_run: 
+            dcd_files = sorted(glob.glob(f"{self.md_path}/md_run_*/*.dcd"))[:1]
+        else:
+            dcd_files = sorted(glob.glob(f"{self.md_path}/md_run_*/*.dcd"))
+        
+        logger.info(f"Collecting cm for CVAE.")
         cm_list = []
-        for dcd in dcd_files: 
+        for dcd in tqdm(dcd_files): 
             try: 
                 mda_u = mda.Universe(self.pdb_file, dcd)
             except: 
@@ -73,13 +83,12 @@ class ml_base(yml_base):
 
         return np.array(cm_list)
 
-    def get_vae_input(self, cm_list:List=None, padding:int=2, **kwargs): 
+    def get_vae_input(self, cm_list:Optional[List]=None, padding:int=2, **kwargs): 
         if cm_list == None: 
             cm_list = self.get_contact_maps(**kwargs)
         logger.debug(f"  Padding {padding} on the contact maps...")
         cvae_input = cm_to_cvae(cm_list, padding=padding)
         logger.debug(f"cvae input shape: {cvae_input.shape}")
-
         return cvae_input
 
     def get_padding(self, strides): 
@@ -151,6 +160,9 @@ class ml_run(ml_base):
                 json.dump(cvae_setup, json_file)
             logger.info(f"  Finished training, next training will "\
                     f"start with {self.n_train_start} frames...")
+                    
+            del cvae
+            tf.keras.backend.clear_session()
 
 
 def cm_to_cvae(cm_data, padding=2): 
