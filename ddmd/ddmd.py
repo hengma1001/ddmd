@@ -58,7 +58,14 @@ class ddmd_run(object):
         self.gpu_ids = GPUManager().request(num_gpus=n_runs)
         logger.info(f"Available {len(self.gpu_ids)} GPUs: {self.gpu_ids}")
         # if not enough GPUs, reconf the workflow
-        if len(self.gpu_ids) < n_runs: 
+        if len(self.gpu_ids) == 2: 
+            logger.info("only two GPUs detected, going to be overlay" \
+                "simulation and ML training/inferences...")
+            logger.info(f"New configuration: {self.n_sims} simulations, ")
+            logger.info(f"1 training, and 1 inference node, on 2 GPUs. ")
+            self.gpu_ids = self.gpu_ids * 2
+
+        elif len(self.gpu_ids) < n_runs:
             n_gpus = len(self.gpu_ids)
             self.n_sims = self.n_sims + n_gpus - n_runs
             logger.info("Not enough GPUs avaible for all the runs, and "\
