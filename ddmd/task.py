@@ -22,10 +22,11 @@ class GPUManager:
     def get_node_list(cls, hostfile=None):
         if hostfile is None:
             hostfile = os.environ["PBS_NODEFILE"]
-        with open(hostfile) as fp:
+            print(hostfile)
+        with open(hostfile, 'r') as fp:
             data = fp.read()
         splitter = ',' if ',' in data else None
-        return [cls(node_id) for node_id in data.split(splitter)]
+        return [node_id for node_id in data.split(splitter)]
 
     def request(self, num_gpus:int) -> Set[int]:
         if self.n_gpus > num_gpus:
@@ -103,7 +104,7 @@ class Run:
 
 if __name__ == "__main__":
     gpu_manager = GPUManager()
-    print(gpu_manager.gpus)
+    print(gpu_manager.hosts)
     gpus = gpu_manager.request(num_gpus=1)
     print(gpus)
     gpus = gpu_manager.request(num_gpus=2)
@@ -116,5 +117,5 @@ if __name__ == "__main__":
     print(gpus)
     gpus = gpu_manager.request(num_gpus=6)
     print(gpus)
-    gpus = gpu_manager.request(num_gpus=7)
+    gpus = gpu_manager.request(num_gpus=9)
     print(gpus)
