@@ -153,7 +153,7 @@ class ml_run(ml_base):
                 logger.info(f"Starting training with {n_frames} frames...")
             
             cvae, cvae_setup = self.train_cvae(**kwargs)
-            save_path = create_path(sys_label=f'retrain_{retrain_lvl}', 
+            save_path = create_path(sys_label=f'retrain_{retrain_lvl:03}', 
                                 dir_type='vae')
             cvae.save(f"{save_path}/cvae_weight.h5")
             with open(f"{save_path}/cvae.json", 'w') as json_file:
