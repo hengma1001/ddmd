@@ -1,6 +1,6 @@
 import os
 import signal
-import GPUtil
+# import GPUtil
 import subprocess
 import logging
 from typing import List, Dict, Tuple, Set
@@ -13,18 +13,25 @@ class InsufficientResources(BaseException):
     pass
 
 class GPUManager:
-    def __init__(self, maxLoad=.2, maxMemory=.2):
-        self.maxLoad = maxLoad
-        self.maxMemory = maxMemory
-        self.gpus = GPUtil.getGPUs()
+    def __init__(self, hostfile=None):
+        self.nranks_per_node = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
+        self.hosts = self.get_node_list(hostfile=hostfile)
+        self.n_gpus = self.nranks_per_node * len(self.hosts)
+
+    @classmethod
+    def get_node_list(cls, hostfile=None):
+        if hostfile is None:
+            hostfile = os.environ["PBS_NODEFILE"]
+        with open(hostfile) as fp:
+            data = fp.read()
+        splitter = ',' if ',' in data else None
+        return [cls(node_id) for node_id in data.split(splitter)]
 
     def request(self, num_gpus:int) -> Set[int]:
-        try: 
-            request_gpus = GPUtil.getAvailable(self.gpus, limit=num_gpus,
-                    maxLoad=self.maxLoad, maxMemory=self.maxMemory)
-        except IndexError: 
-            raise InsufficientResources("Not enough resource available for the request. ")
-        return request_gpus
+        if self.n_gpus > num_gpus:
+            return list(range(num_gpus))
+        else: 
+            return list(range(self.n_gpus))
 
 
 class RunTemplate:
@@ -38,6 +45,7 @@ class RunTemplate:
         command_line: str,
         gpu_ids=None,
         envs_dict=None,
+        host=None
     ):
 
         if envs_dict is None:
@@ -45,7 +53,8 @@ class RunTemplate:
         if gpu_ids:
             envs_dict["CUDA_VISIBLE_DEVICES"] = ",".join(str(id) for id in gpu_ids)
         envs = RunTemplate._env_str(envs_dict)
-
+        if host: 
+            envs = f"ssh {host} {envs}"
         return f"{envs} {command_line}"
 
 
@@ -58,6 +67,7 @@ class Run:
         output_file,
         gpu_ids=None,
         cwd=None,
+        host=None,
         envs_dict: Dict[str, str] = None,
     ):
         self.gpu_ids = gpu_ids
@@ -66,6 +76,7 @@ class Run:
         command = RunTemplate.render(
             command_line=cmd_line,
             gpu_ids=gpu_ids,
+            host=host,
             envs_dict=envs_dict,
         )
 

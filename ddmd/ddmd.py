@@ -55,7 +55,8 @@ class ddmd_run(object):
             logger.info(f"Running only {self.n_sims} simulations...")
         else:
             n_runs = self.n_sims + 2
-        self.gpu_ids = GPUManager().request(num_gpus=n_runs)
+        self.gpu_host = GPUManager()
+        self.gpu_ids = self.gpu_host.request(num_gpus=n_runs)
         logger.info(f"Available {len(self.gpu_ids)} GPUs: {self.gpu_ids}")
         # if not enough GPUs, reconf the workflow
         if len(self.gpu_ids) == 2: 
@@ -126,11 +127,15 @@ class ddmd_run(object):
             output_file = f"{output_file}_{type_ind}"
         # get gpu ids for current job 
         gpu_ids = [self.gpu_ids.pop() for _ in range(n_gpus)]
+        host = self.gpu_host.hosts[gpu_ids[0] // self.gpu_host.nranks_per_node]
+        gpu_ids = [i % self.gpu_host.nranks_per_node for i in gpu_ids]
+        
         run = Run(
             cmd_line=run_cmd,
             gpu_ids=gpu_ids,
             output_file=output_file,
             cwd=work_path, # can be a different working directory
+            host=host,
             envs_dict=None, # can be a dictionary of environ vars to add
         )
         return run
