@@ -34,6 +34,11 @@ class GPUManager:
         else: 
             return list(range(self.n_gpus))
 
+    def loc_gpu(self, gpu_id): 
+        host = self.hosts[ gpu_id // self.nranks_per_node ]
+        gpu_id = gpu_id % self.nranks_per_node
+        return host, gpu_id
+
 
 class RunTemplate:
     @staticmethod
@@ -119,3 +124,5 @@ if __name__ == "__main__":
     print(gpus)
     gpus = gpu_manager.request(num_gpus=9)
     print(gpus)
+    for gpu in gpus: 
+        print(gpu_manager.loc_gpu(gpu))
