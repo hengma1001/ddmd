@@ -21,6 +21,7 @@ def main(args):
                 for p in runnings: 
                     p.kill()
                 logger.info("cleaned up!")
+                runs = runnings
             time.sleep(5)
         logger.info("All done!")
     except KeyboardInterrupt: 
