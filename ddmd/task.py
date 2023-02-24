@@ -43,12 +43,13 @@ class GPUManager:
 class RunTemplate:
     @staticmethod
     def _env_str(envs):
-        envstrs = (f'export {var}="{val}" && ' for var, val in envs.items())
+        envstrs = (f"export {var}='{val}' && " for var, val in envs.items())
         return " ".join(envstrs)
 
     @staticmethod
     def render(
         command_line: str,
+        cwd=None,
         gpu_ids=None,
         envs_dict=None,
         host=None
@@ -57,11 +58,14 @@ class RunTemplate:
         if envs_dict is None:
             envs_dict = {}
         if gpu_ids:
-            envs_dict["CUDA_VISIBLE_DEVICES"] = ",".join(str(id) for id in gpu_ids)
+            envs_dict["CUDA_VISIBLE_DEVICES"] = ','.join(str(id) for id in gpu_ids)
         envs = RunTemplate._env_str(envs_dict)
+        cmd = f"{envs} {command_line}"
+        if cwd:
+            cmd =  f"cd {cwd} && {cmd}"
         if host: 
-            envs = f"ssh {host} {envs}"
-        return f"{envs} {command_line}"
+            cmd = f'ssh {host} "{cmd}"'
+        return cmd
 
 
 class Run:
@@ -81,6 +85,7 @@ class Run:
 
         command = RunTemplate.render(
             command_line=cmd_line,
+            cwd=cwd,
             gpu_ids=gpu_ids,
             host=host,
             envs_dict=envs_dict,
@@ -90,7 +95,6 @@ class Run:
         self.process = subprocess.Popen(
             command,
             shell=True,
-            cwd=cwd,
             stdout=self.outfile,
             stderr=subprocess.STDOUT,
             preexec_fn=os.setsid
