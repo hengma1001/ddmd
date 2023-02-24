@@ -28,6 +28,7 @@ class ddmd_run(object):
         
         self.md_only = self.ddmd_setup['md_only'] if 'md_only' in self.ddmd_setup else False
         work_dir = self.ddmd_setup['output_dir']
+        self.executable = self.ddmd_setup['conda_env'] + '/bin/ddmd'
         cont_run =self.ddmd_setup['continue'] if 'continue' in self.ddmd_setup else False
         if os.path.exists(work_dir):
             if cont_run:
@@ -120,7 +121,7 @@ class ddmd_run(object):
             yml_file, work_path,
             n_gpus=1, job_type='md', 
             type_ind=-1): 
-        run_cmd = f"ddmd run_{job_type} -c {yml_file}"
+        run_cmd = f"{self.executable} run_{job_type} -c {yml_file}"
         # setting up output log file
         output_file = f"./{self.log_dir}/{job_type}"
         if type_ind >= 0: 
