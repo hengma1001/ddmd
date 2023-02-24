@@ -223,7 +223,8 @@ class Simulate(yml_base):
         if iter == 0: 
             logger.info(f"<< Finished {level} iterations of MD simulations >>")
             return
-        omm_path = create_path(sys_label=os.environ['CUDA_VISIBLE_DEVICES'])
+        path_label = os.environ['CUDA_VISIBLE_DEVICES'] + os.environ['HOSTNAME'].split('.')[0]
+        omm_path = create_path(sys_label=path_label)
         logger.info(f"Starting simulation at {omm_path}")
         self.dump_yaml(f"{omm_path}/setting.yml")
         self.run_sim(omm_path)
