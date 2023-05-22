@@ -18,6 +18,7 @@ from ddmd.utils import create_path, get_dir_base
 
 logger = build_logger()
 
+
 class Simulate(yml_base):
     """
     Run simulation with OpenMM
@@ -81,23 +82,24 @@ class Simulate(yml_base):
     """
 
     def __init__(self,
-            pdb_file,
-            top_file=None, 
-            checkpoint=None,
-            gpu_id=0,
-            output_traj="output.dcd",
-            output_log="output.log", 
-            # output_cm=None,
-            report_time=10, 
-            sim_time=10,
-            dt=2.,
-            explicit_sol=True,
-            temperature=300., 
-            pressure=1.,
-            nonbonded_cutoff=1.,
-            init_vel=False,
-            forcefield='amber14-all.xml', 
-            sol_model='implicit/gbn2.xml') -> None:
+                 pdb_file,
+                 top_file=None,
+                 checkpoint=None,
+                 gpu_id=0,
+                 output_traj="output.dcd",
+                 output_log="output.log",
+                 # output_cm=None,
+                 report_time=10,
+                 sim_time=10,
+                 dt=2.,
+                 explicit_sol=True,
+                 temperature=300.,
+                 pressure=1.,
+                 anisotropic_barostate=False,
+                 nonbonded_cutoff=1.,
+                 init_vel=False,
+                 forcefield='amber14-all.xml',
+                 sol_model='implicit/gbn2.xml') -> None:
 
         super().__init__()
         # inputs
@@ -112,11 +114,12 @@ class Simulate(yml_base):
         # self.output_cm = output_cm
         self.report_time = report_time * u.picoseconds
         self.sim_time = sim_time * u.nanoseconds
-        # sim setup 
+        # sim setup
         self.dt = dt * u.femtoseconds
         self.explicit_sol = explicit_sol
         self.temperature = temperature
         self.pressure = pressure
+        self.anisotropic_barostate = anisotropic_barostate
         self.nonbonded_cutoff = nonbonded_cutoff * u.nanometers
         self.init_vel = init_vel
 
@@ -125,53 +128,59 @@ class Simulate(yml_base):
         self.sol_model = sol_model
         self.base_dir = os.getcwd()
 
-    def get_setup(self): 
-        return {'pdb_file': self.pdb_file, 
-                'top_file': self.top_file, 
+    def get_setup(self):
+        return {'pdb_file': self.pdb_file,
+                'top_file': self.top_file,
                 'checkpoint': self.checkpoint}
 
-    def build_system(self): 
+    def build_system(self):
         system_setup = {
-                "nonbondedMethod": app.PME if self.explicit_sol 
-                                        else app.CutoffNonPeriodic, 
-                "nonbondedCutoff": self.nonbonded_cutoff, 
-                "constraints": app.HBonds, 
-                 }
-        if self.top_file: 
-            pdb = pmd.load_file(self.top_file, xyz = self.pdb_file)
-            if not self.explicit_sol: 
+            "nonbondedMethod": app.PME if self.explicit_sol
+            else app.CutoffNonPeriodic,
+            "nonbondedCutoff": self.nonbonded_cutoff,
+            "constraints": app.HBonds,
+        }
+        if self.top_file:
+            pdb = pmd.load_file(self.top_file, xyz=self.pdb_file)
+            if not self.explicit_sol:
                 system_setup['implicitSolvent'] = app.GBn2
+            print(system_setup)
             system = pdb.createSystem(**system_setup)
-        else: 
-            # only supporting implicit runs without topology file 
+        else:
+            # only supporting implicit runs without topology file
             # for now
             pdb = pmd.load_file(self.pdb_file)
             forcefield = app.ForceField(
-                           self.forcefield,  self.sol_model)
+                self.forcefield, self.sol_model)
             system = forcefield.createSystem(pdb.topology, **system_setup)
 
-        if self.pressure and self.explicit_sol: 
-            system.addForce(omm.MonteCarloBarostat(
-                            self.pressure*u.bar, 
-                            self.temperature*u.kelvin)
-                            )
+        if self.pressure and self.explicit_sol:
+            if self.anisotropic_barostate:
+                system.addForce(
+                    omm.MonteCarloAnisotropicBarostat((self.pressure, self.pressure, self.pressure)*u.bar,
+                                                      self.temperature*u.kelvin, False, False, True))
+            else:
+                system.addForce(omm.MonteCarloBarostat(
+                                self.pressure*u.bar,
+                                self.temperature*u.kelvin)
+                                )
 
-        self.system = system 
+        self.system = system
         self.top = pdb
 
-    def build_simulation(self): 
-        self.build_system() 
-        if self.temperature: 
+    def build_simulation(self):
+        self.build_system()
+        if self.temperature:
             integrator = omm.LangevinMiddleIntegrator(
-                        self.temperature * u.kelvin, 
-                        1 / u.picosecond, self.dt)
-        else: 
+                self.temperature * u.kelvin,
+                1 / u.picosecond, self.dt)
+        else:
             integrator = omm.VerletIntegrator(self.dt)
-        
+
         try:
             platform = omm.Platform_getPlatformByName("CUDA")
-            properties = {'DeviceIndex': str(self.gpu_id), 
-                            'CudaPrecision': 'mixed'}
+            properties = {'DeviceIndex': str(self.gpu_id),
+                          'CudaPrecision': 'mixed'}
         except Exception:
             platform = omm.Platform_getPlatformByName("OpenCL")
             properties = {'DeviceIndex': str(self.gpu_id)}
@@ -180,37 +189,37 @@ class Simulate(yml_base):
             self.top.topology, self.system, integrator, platform, properties)
         self.simulation = simulation
 
-    def minimizeEnergy(self): 
+    def minimizeEnergy(self):
         self.simulation.context.setPositions(self.top.positions)
-        self.simulation.minimizeEnergy() 
+        self.simulation.minimizeEnergy()
 
-    def add_reporters(self): 
+    def add_reporters(self):
         report_freq = int(self.report_time / self.dt)
         self.simulation.reporters.append(
-                    app.DCDReporter(self.output_traj, report_freq))
+            app.DCDReporter(self.output_traj, report_freq))
         # if self.output_cm:
         #     self.simulation.reporters.append(
         #             ContactMapReporter(self.output_cm, report_freq))
         self.simulation.reporters.append(app.StateDataReporter(
-                self.output_log, report_freq, 
-                step=True, time=True, speed=True,
-                potentialEnergy=True, temperature=True, totalEnergy=True))
+            self.output_log, report_freq,
+            step=True, time=True, speed=True,
+            potentialEnergy=True, temperature=True, totalEnergy=True))
         self.simulation.reporters.append(
-                app.CheckpointReporter('checkpnt.chk', report_freq))
+            app.CheckpointReporter('checkpnt.chk', report_freq))
 
-    def run_sim(self, path='./'): 
-        if not os.path.exists(path): 
+    def run_sim(self, path='./'):
+        if not os.path.exists(path):
             os.makedirs(path)
 
-        self.build_simulation() 
+        self.build_simulation()
         # skip minimization if check point exists
-        if self.checkpoint: 
+        if self.checkpoint:
             self.simulation.loadCheckpoint(self.checkpoint)
-        else: 
+        else:
             self.minimizeEnergy()
-            
+
         os.chdir(path)
-        self.add_reporters() 
+        self.add_reporters()
         # clutchy round up method
         nsteps = int(self.sim_time / self.dt + .5)
         logger.info(f"  Running simulation for {nsteps} steps. ")
@@ -218,9 +227,9 @@ class Simulate(yml_base):
         touch_file('DONE')
         os.chdir(self.base_dir)
 
-    def ddmd_run(self, iter=1e6, level=0): 
+    def ddmd_run(self, iter=1e6, level=0):
         """ddmd recursive MD runs"""
-        if iter == 0: 
+        if iter == 0:
             logger.info(f"<< Finished {level} iterations of MD simulations >>")
             return
         path_label = os.environ['CUDA_VISIBLE_DEVICES']
@@ -230,17 +239,16 @@ class Simulate(yml_base):
         self.run_sim(omm_path)
         # touch done
         new_pdb = f"{omm_path}/new_pdb"
-        if os.path.exists(new_pdb): 
+        if os.path.exists(new_pdb):
             pdb_info = json.load(open(new_pdb, 'r'))
             pdb_file = write_pdb_frame(
-                    pdb_info['pdb'], pdb_info['dcd'], 
-                    pdb_info['frame'], save_path=omm_path)
-            logger.info(f"    Found new pdb file, "\
+                pdb_info['pdb'], pdb_info['dcd'],
+                pdb_info['frame'], save_path=omm_path)
+            logger.info(f"    Found new pdb file, "
                         "starting new simulation...")
             self.pdb_file = pdb_file
             self.checkpoint = None
-        else: 
+        else:
             logger.info(f"    Continue the simulation elsewhere...")
             self.checkpoint = os.path.abspath(f"{omm_path}/checkpnt.chk")
         self.ddmd_run(iter=iter-1, level=level+1)
-

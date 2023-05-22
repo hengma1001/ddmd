@@ -21,8 +21,8 @@ class ensemble_run(ddmd_run):
         input_files = ['pdb_file', 'top_file', 'checkpoint']
         iter_conf = []
         for input in input_files: 
-            if input in md_setup and md_setup[input]: 
-                if not os.path.isabs(md_setup[input]): 
+            if input in md_setup and md_setup[input]:
+                if not os.path.isabs(md_setup[input]):
                     md_setup[input] = os.path.join(self.yml_dir, md_setup[input])
                     logger.debug(f"updated entry{input} to {md_setup[input]}.")
                 if '*' in md_setup[input]: 
@@ -98,6 +98,6 @@ class ensemble_run(ddmd_run):
         except KeyboardInterrupt: 
             for p in runs: 
                 p.kill()
-            logger.info("cleaned up!") 
+            logger.info("cleaned up!")
         
         
