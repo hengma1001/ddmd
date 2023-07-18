@@ -125,7 +125,7 @@ class ddmd_run(object):
         if type_ind >= 0: 
             output_file = f"{output_file}_{type_ind}"
         # get gpu ids for current job 
-        gpu_ids = [self.gpu_ids.pop() for _ in range(n_gpus)]
+        gpu_ids = [self.gpu_ids.pop(0) for _ in range(n_gpus)]
         run = Run(
             cmd_line=run_cmd,
             gpu_ids=gpu_ids,

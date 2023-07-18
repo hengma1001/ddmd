@@ -107,7 +107,6 @@ def separate_kwargs(func, kwargs):
             input_kwargs[key] = kwargs.pop(key)
     return input_kwargs, kwargs
 
-
 def write_pdb_frame(pdb, dcd, frame:int, save_path=None): 
     mda_u = mda.Universe(pdb, dcd)
     mda_u.trajectory[frame]
@@ -128,3 +127,23 @@ def ddmd_abspath(filepath):
         return os.path.abspath(filepath)
     else: 
         return None
+    
+
+def missing_hydrogen(pdb_file):
+    """
+    Check whether a pdb file contains H atoms
+
+    Parameters
+    ----------
+    pdb_file : str
+        path to input pdb file
+
+    Returns
+    -------
+    missingH : bool
+        True if missing H, false otherwise
+    """
+    mda_u = mda.Universe(pdb_file)
+    hydrogens = mda_u.select_atoms('name H*')
+    missingH = True if hydrogens.n_atoms == 0 else False
+    return missingH

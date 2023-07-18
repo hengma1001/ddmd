@@ -13,7 +13,7 @@ except:
 
 # from .openmm_reporter import ContactMapReporter
 from ddmd.utils import build_logger, touch_file, write_pdb_frame
-from ddmd.utils import yml_base
+from ddmd.utils import yml_base, missing_hydrogen
 from ddmd.utils import create_path, get_dir_base
 
 logger = build_logger()
@@ -144,12 +144,13 @@ class Simulate(yml_base):
             pdb = pmd.load_file(self.top_file, xyz=self.pdb_file)
             if not self.explicit_sol:
                 system_setup['implicitSolvent'] = app.GBn2
-            print(system_setup)
+                pdb.box = None
             system = pdb.createSystem(**system_setup)
         else:
             # only supporting implicit runs without topology file
             # for now
             pdb = pmd.load_file(self.pdb_file)
+            pdb.box = None
             forcefield = app.ForceField(
                 self.forcefield, self.sol_model)
             system = forcefield.createSystem(pdb.topology, **system_setup)
