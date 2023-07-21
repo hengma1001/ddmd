@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split
 from typing import List, Optional
 
 from tqdm import tqdm
+from multiprocessing import Process
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -123,13 +124,20 @@ class ml_base(yml_base):
         return cvae, cvae_input
 
     def train_cvae(self, 
+            retrain_lvl=0,
             batch_size=256,
             epochs=100,
             **kwargs): 
         cvae, cvae_input = self.build_vae(**kwargs)
         train_data, val_data = data_split(cvae_input)
-        cvae.train(train_data, batch_size, epochs=epochs, 
+        cvae.train(train_data, batch_size, epochs=epochs,
                     validation_data=val_data)
+        # cvae, cvae_setup = self.train_cvae(**kwargs)
+        save_path = create_path(sys_label=f'retrain_{retrain_lvl:03}',
+                            dir_type='vae')
+        with open(f"{save_path}/cvae.json", 'w') as json_file:
+            json.dump(kwargs, json_file)
+        cvae.save(f"{save_path}/cvae_weight.h5")
         return cvae, kwargs
 
 
@@ -138,7 +146,7 @@ class ml_run(ml_base):
         super().__init__(pdb_file, md_path)
         self.n_train_start = n_train_start
 
-    def ddmd_run(self, retrain_freq=1.5, **kwargs): 
+    def ddmd_run(self, retrain_freq=2000, **kwargs): 
         retrain_lvl = 0
         while True: 
             # decide whether to start training
@@ -148,24 +156,24 @@ class ml_run(ml_base):
                 #         f"{self.n_train_start} frames for training")
                 continue
             else: 
-                self.n_train_start = n_frames * retrain_freq
+                self.n_train_start = n_frames + retrain_freq if retrain_freq > 2 else n_frames * retrain_freq
                 retrain_lvl += 1
                 logger.info(f"Starting training with {n_frames} frames...")
             
-            cvae, cvae_setup = self.train_cvae(**kwargs)
-            save_path = create_path(sys_label=f'retrain_{retrain_lvl:03}', 
-                                dir_type='vae')
-            with open(f"{save_path}/cvae.json", 'w') as json_file:
-                json.dump(cvae_setup, json_file)
-            cvae.save(f"{save_path}/cvae_weight.h5")
+            kwargs['retrain_lvl'] = retrain_lvl
+            ml_p = Process(target=self.train_cvae, kwargs=kwargs)
+            ml_p.start()
+            # cvae, cvae_setup = self.train_cvae(**kwargs)
+            # save_path = create_path(sys_label=f'retrain_{retrain_lvl:03}',
+            #                     dir_type='vae')
+            # with open(f"{save_path}/cvae.json", 'w') as json_file:
+            #     json.dump(cvae_setup, json_file)
+            # cvae.save(f"{save_path}/cvae_weight.h5")
             logger.info(f"  Finished training, next training will "\
                     f"start with {self.n_train_start} frames...")
-                    
-            del cvae
-            tf.keras.backend.clear_session()
 
 
-def cm_to_cvae(cm_data, padding=2): 
+def cm_to_cvae(cm_data, padding=2):
     """
     A function converting the 2d upper triangle information of contact maps 
     read from hdf5 file to full contact map and reshape to the format ready 
@@ -176,8 +184,8 @@ def cm_to_cvae(cm_data, padding=2):
 
     # padding if odd dimension occurs in image 
     pad_f = lambda x: (0,0) if x%padding == 0 else (0,padding-x%padding) 
-    padding_buffer = [(0,0)] 
-    for x in cm_data_full.shape[1:]: 
+    padding_buffer = [(0,0)]
+    for x in cm_data_full.shape[1:]:
         padding_buffer.append(pad_f(x))
     cm_data_full = np.pad(cm_data_full, padding_buffer, mode='constant')
 
@@ -198,10 +206,10 @@ def triu_to_full(cm0):
     return cm_full
 
 
-def data_split(x, train_size=.7, test_size=False): 
+def data_split(x, train_size=.7, test_size=False):
     train, val = train_test_split(x, train_size=train_size)
-    if test_size: 
+    if test_size:
         val, test_data = train_test_split(val, train_size=test_size)
         return train, val, test_data
-    else: 
+    else:
         return train, val
